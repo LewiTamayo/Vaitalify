@@ -20,5 +20,6 @@ const defaults: Record<string, string> = {
 };
 
 for (const [clave, valor] of Object.entries(defaults)) {
-  process.env[clave] ??= valor;
+  // Vacía (p. ej. `DATABASE_URL=` en un .env.test sin rellenar) cuenta como no definida.
+  if (!process.env[clave]) process.env[clave] = valor;
 }

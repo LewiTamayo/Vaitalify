@@ -54,6 +54,10 @@ y ejecuta `npm run db:migrate:test` antes de la primera corrida.
 | `POST /api/v1/auth/logout` | Revoca el refresh token |
 | `GET/PATCH/DELETE /api/v1/usuarios/me` | Cuenta propia (consultar, editar, eliminar con todos sus datos) |
 | `GET /api/v1/usuarios/me/exportar` | Descarga todos los datos propios en JSON |
+| `POST/GET/PUT/PATCH/DELETE /api/v1/perfil` | Perfil de hábitos (uno por usuario) |
+| `POST/GET /api/v1/bloques` | Crear y listar bloques de horario (`?tipo`, `?diaSemana`, `?page`, `?pageSize`) |
+| `GET/PUT/PATCH/DELETE /api/v1/bloques/:id` | Un bloque propio (los ajenos responden 404) |
+| `POST /api/v1/bloques/importar` | Importa hasta 200 bloques de una vez (todos o ninguno) |
 
 Todas las rutas salvo `/health`, `/docs`, `/openapi.json`, registro, login y refresh exigen
 `Authorization: Bearer <accessToken>`.
