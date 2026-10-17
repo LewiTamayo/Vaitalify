@@ -34,6 +34,8 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
+      // IPs de ejemplo (rangos privados) como datos de prueba.
+      'sonarjs/no-hardcoded-ip': 'off',
     },
   },
 );

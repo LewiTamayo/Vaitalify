@@ -2,7 +2,10 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const queryRaw = vi.fn();
-vi.mock('../../../../src/common/db/prisma.js', () => ({ prisma: { $queryRaw: queryRaw } }));
+vi.mock('../../../../src/common/db/prisma.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  prisma: { $queryRaw: queryRaw },
+}));
 
 const { default: app } = await import('../../../../src/app.js');
 const { comprobarBaseDatos } = await import('../../../../src/modules/health/health.service.js');

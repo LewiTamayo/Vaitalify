@@ -1,26 +1,40 @@
 import cors from 'cors';
 import express, { Router, type Express } from 'express';
-import { helmet } from './common/middleware/helmet.js';
 import { pinoHttp } from 'pino-http';
 import { errorHandler, notFoundHandler } from './common/errors/error-handler.js';
 import { logger } from './common/logger.js';
+import { claveUsuarioOIp } from './common/middleware/auth.js';
+import { helmet } from './common/middleware/helmet.js';
+import { rateLimit } from './common/middleware/rate-limit.js';
 import { docsRouter } from './common/openapi/docs.js';
+import { REGLAS, fabricaPorDefecto, type FabricaLimitador } from './common/ratelimit/limitador.js';
 import { env } from './config/env.js';
+import { crearAuthRouter } from './modules/auth/auth.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 
+export interface OpcionesApp {
+  // Inyectable para que los tests no choquen con los límites reales.
+  fabricaLimitador?: FabricaLimitador;
+}
+
 // ENTRY DE VERCEL: exporta la app sin llamar listen (ver src/local.ts para desarrollo).
-export function createApp(): Express {
+export function createApp(opciones: OpcionesApp = {}): Express {
+  const fabrica = opciones.fabricaLimitador ?? fabricaPorDefecto();
   const app = express();
 
+  // Detrás del proxy de Vercel: req.ip y el protocolo vienen de x-forwarded-*.
+  app.set('trust proxy', true);
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGINS }));
   app.use(express.json({ limit: '100kb' }));
   app.use(pinoHttp({ logger }));
 
-  // Todos los módulos se montan aquí.
+  // Todos los módulos se montan aquí. /health y la documentación quedan fuera del límite global.
   const apiRouter = Router();
   apiRouter.use(healthRouter);
   apiRouter.use(docsRouter);
+  apiRouter.use(rateLimit(fabrica(REGLAS.global), claveUsuarioOIp));
+  apiRouter.use(crearAuthRouter(fabrica));
 
   app.get('/', (_req, res) => {
     res.redirect(302, '/api/v1/docs');
