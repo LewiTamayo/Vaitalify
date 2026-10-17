@@ -1,6 +1,6 @@
 import cors from 'cors';
 import express, { Router, type Express } from 'express';
-import helmet from 'helmet';
+import { helmet } from './common/middleware/helmet.js';
 import { pinoHttp } from 'pino-http';
 import { errorHandler, notFoundHandler } from './common/errors/error-handler.js';
 import { logger } from './common/logger.js';
