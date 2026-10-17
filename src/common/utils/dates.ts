@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { z } from 'zod';
 
 // Fechas del usuario: "YYYY-MM-DD" locales (sin zona). "Hoy" siempre se calcula en APP_TZ
 // porque Vercel corre en UTC (entre 19:00 y 23:59 de Bogotá, UTC ya es el día siguiente).
@@ -52,3 +53,9 @@ export function parseFecha(fecha: string): Date {
 export function formatFecha(d: Date): string {
   return aTexto(DateTime.fromJSDate(d, { zone: 'utc' }));
 }
+
+// Fecha local "YYYY-MM-DD" que además debe existir en el calendario (rechaza 2026-02-30).
+export const FechaSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida: usa el formato YYYY-MM-DD')
+  .refine((fecha) => DateTime.fromISO(fecha, { zone: 'utc' }).isValid, 'La fecha no existe');

@@ -13,6 +13,7 @@ import { actividadesRouter } from './modules/actividades/actividades.routes.js';
 import { crearAuthRouter } from './modules/auth/auth.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { RUTA_IMPORTAR, bloquesRouter } from './modules/bloques/bloques.routes.js';
+import { microVentanasRouter } from './modules/micro-ventanas/micro-ventanas.routes.js';
 import { perfilRouter } from './modules/perfil/perfil.routes.js';
 import { crearUsuariosRouter } from './modules/usuarios/usuarios.routes.js';
 
@@ -51,6 +52,7 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   apiRouter.use(perfilRouter);
   apiRouter.use(bloquesRouter);
   apiRouter.use(actividadesRouter);
+  apiRouter.use(microVentanasRouter);
 
   app.get('/', (_req, res) => {
     res.redirect(302, '/api/v1/docs');

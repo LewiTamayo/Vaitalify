@@ -1,6 +1,7 @@
 import { errores } from '../../common/errors/app-error.js';
 import { pagina, type Pagina } from '../../common/utils/pagination.js';
 import { formatHHmm } from '../../common/utils/time.js';
+import { recalcularSemana } from '../micro-ventanas/micro-ventanas.service.js';
 import * as repo from './bloques.repository.js';
 import {
   validarBloque,
@@ -24,8 +25,11 @@ export function aDto(b: repo.FilaBloque): BloqueDto {
   };
 }
 
+// Toda mutación del horario recalcula las micro-ventanas de la semana en la misma petición (§6.4).
 export async function crear(idUsuario: number, datos: DatosBloque): Promise<BloqueDto> {
-  return aDto(await repo.crear(idUsuario, datos));
+  const bloque = aDto(await repo.crear(idUsuario, datos));
+  await recalcularSemana(idUsuario);
+  return bloque;
 }
 
 export async function importar(
@@ -33,6 +37,7 @@ export async function importar(
   bloques: DatosBloque[],
 ): Promise<{ importados: number; bloques: BloqueDto[] }> {
   const filas = await repo.importar(idUsuario, bloques);
+  await recalcularSemana(idUsuario);
   return { importados: filas.length, bloques: filas.map(aDto) };
 }
 
@@ -57,6 +62,7 @@ export async function reemplazar(
 ): Promise<BloqueDto> {
   const bloque = await repo.reemplazar(idUsuario, idBloque, datos);
   if (!bloque) throw noEncontrado();
+  await recalcularSemana(idUsuario);
   return aDto(bloque);
 }
 
@@ -74,4 +80,5 @@ export async function actualizar(
 
 export async function eliminar(idUsuario: number, idBloque: number): Promise<void> {
   if (!(await repo.eliminar(idUsuario, idBloque))) throw noEncontrado();
+  await recalcularSemana(idUsuario);
 }
