@@ -70,9 +70,20 @@ function sinVacias(raw: Entrada): Entrada {
   );
 }
 
+// Si en Vercel se olvida APP_ENV, se deduce de VERCEL_ENV para no saltarse las reglas de producción.
+const APP_ENV_DESDE_VERCEL: Record<string, string> = {
+  production: 'production',
+  preview: 'preview',
+  development: 'local',
+};
+
 export function parseEnv(raw: Entrada): Env {
   const limpio = sinVacias(raw);
-  const entrada = { ...limpio, DIRECT_URL: limpio.DIRECT_URL ?? limpio.DATABASE_URL_UNPOOLED };
+  const entrada = {
+    ...limpio,
+    APP_ENV: limpio.APP_ENV ?? APP_ENV_DESDE_VERCEL[limpio.VERCEL_ENV ?? ''],
+    DIRECT_URL: limpio.DIRECT_URL ?? limpio.DATABASE_URL_UNPOOLED,
+  };
   const resultado = esquema.safeParse(entrada);
   // Solo nombres y motivos: nunca los valores (pueden ser secretos).
   const errores = [

@@ -33,4 +33,7 @@ Las desviaciones respecto al modelo ER del Entregable 2 (S-01 … S-17) están e
 | El script de arranque de Swagger UI se sirve en `/api/v1/docs-init.js`. | Evita `'unsafe-inline'` en la CSP de `/docs`; las demás rutas conservan la CSP estricta de `helmet`. |
 | `/health` responde `503 {status:"degraded", db:"down"}` si la BD no contesta en 3 s. | Evita que la función quede colgada hasta el *timeout* de Vercel (Neon puede estar suspendida). |
 | Los `crons` de `vercel.json` se agregan en la Fase 5. | Los endpoints `/jobs/*` aún no existen. |
+| Si falta `APP_ENV`, se deduce de `VERCEL_ENV` (`production`, `preview`; `development` → `local`). | Evita que un despliegue sin `APP_ENV` arranque con secretos de ejemplo. |
+| Timeout de conexión a PostgreSQL de 5 s. | Una BD inalcanzable no deja peticiones colgadas hasta el límite de Vercel (§17.2). |
+| En un build de Vercel, las migraciones exigen `DIRECT_URL` o `DATABASE_URL_UNPOOLED`. | `migrate deploy` a través del pooler puede fallar; nunca se usa la URL con pooling para migrar en Vercel. |
 | Bloques de horario: si la hora de dormir es posterior a medianoche, no se buscan micro-ventanas después de las 00:00 en el MVP. | Simplificación coherente con S-11. |

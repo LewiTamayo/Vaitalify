@@ -87,3 +87,18 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...base, APP_ENV: 'staging' })).toThrow(/APP_ENV/);
   });
 });
+
+describe('parseEnv en Vercel', () => {
+  it('sin APP_ENV, usa VERCEL_ENV y aplica las reglas de production', () => {
+    const sinAppEnv = { ...base, APP_ENV: undefined };
+    expect(() =>
+      parseEnv({ ...sinAppEnv, VERCEL_ENV: 'production', JWT_ACCESS_SECRET: 'cambia-esto' }),
+    ).toThrow(/JWT_ACCESS_SECRET/);
+    expect(parseEnv({ ...sinAppEnv, VERCEL_ENV: 'preview' }).APP_ENV).toBe('preview');
+  });
+
+  it('VERCEL_ENV=development se trata como local', () => {
+    const sinAppEnv = { ...base, APP_ENV: undefined };
+    expect(parseEnv({ ...sinAppEnv, VERCEL_ENV: 'development' }).APP_ENV).toBe('local');
+  });
+});
