@@ -19,6 +19,8 @@ describe('OpenAPI y Swagger UI', () => {
       expect(res.body.paths[ruta]?.post).toBeDefined();
     }
     expect(res.body.components.schemas.Sesion).toBeDefined();
+    expect(res.body.paths['/usuarios/me']).toHaveProperty('patch');
+    expect(res.body.paths['/usuarios/me/exportar']).toHaveProperty('get');
     expect(res.body.components.securitySchemes.bearerAuth).toBeDefined();
   });
 
