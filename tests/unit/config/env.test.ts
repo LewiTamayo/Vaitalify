@@ -38,15 +38,15 @@ describe('parseEnv', () => {
   });
 
   it('solo permite RATE_LIMIT_ENABLED=false en perf', () => {
-    expect(() =>
-      parseEnv({ ...base, APP_ENV: 'production', RATE_LIMIT_ENABLED: 'false' }),
-    ).toThrow(/RATE_LIMIT_ENABLED/);
+    expect(() => parseEnv({ ...base, APP_ENV: 'production', RATE_LIMIT_ENABLED: 'false' })).toThrow(
+      /RATE_LIMIT_ENABLED/,
+    );
     expect(() => parseEnv({ ...base, APP_ENV: 'local', RATE_LIMIT_ENABLED: 'false' })).toThrow(
       /RATE_LIMIT_ENABLED/,
     );
-    expect(parseEnv({ ...base, APP_ENV: 'perf', RATE_LIMIT_ENABLED: 'false' }).RATE_LIMIT_ENABLED).toBe(
-      false,
-    );
+    expect(
+      parseEnv({ ...base, APP_ENV: 'perf', RATE_LIMIT_ENABLED: 'false' }).RATE_LIMIT_ENABLED,
+    ).toBe(false);
   });
 
   it('rechaza secretos de ejemplo o cortos en production', () => {
@@ -63,7 +63,12 @@ describe('parseEnv', () => {
     const valor = 's3cr3t-valor-unico';
     let mensaje = '';
     try {
-      parseEnv({ ...base, APP_ENV: 'production', JWT_REFRESH_SECRET: valor, DATABASE_URL: undefined });
+      parseEnv({
+        ...base,
+        APP_ENV: 'production',
+        JWT_REFRESH_SECRET: valor,
+        DATABASE_URL: undefined,
+      });
     } catch (e) {
       mensaje = (e as Error).message;
     }

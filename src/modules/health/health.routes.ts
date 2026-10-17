@@ -14,8 +14,14 @@ registry.registerPath({
   tags: ['Utilidad'],
   summary: 'Liveness/readiness: estado de la API y de la base de datos',
   responses: {
-    200: { description: 'API y BD disponibles', content: { 'application/json': { schema: HealthSchema } } },
-    503: { description: 'BD no disponible', content: { 'application/json': { schema: HealthSchema } } },
+    200: {
+      description: 'API y BD disponibles',
+      content: { 'application/json': { schema: HealthSchema } },
+    },
+    503: {
+      description: 'BD no disponible',
+      content: { 'application/json': { schema: HealthSchema } },
+    },
   },
 });
 

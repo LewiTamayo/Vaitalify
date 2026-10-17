@@ -1,0 +1,16 @@
+# Referencia: el flujo principal usa Neon (ver docs/DECISIONES.md, U-2).
+# Útil si en el futuro se dispone de Docker para un PostgreSQL local.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: vitalify
+      POSTGRES_PASSWORD: vitalify
+      POSTGRES_DB: vitalify
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

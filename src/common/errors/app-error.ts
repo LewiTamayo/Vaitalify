@@ -33,7 +33,8 @@ export class AppError extends Error {
 export const errores = {
   validacion: (errors: ErrorCampo[], detail?: string) =>
     new AppError(400, 'validation', 'Datos inválidos', { errors, detail }),
-  noAutenticado: (detail?: string) => new AppError(401, 'no-autenticado', 'No autenticado', { detail }),
+  noAutenticado: (detail?: string) =>
+    new AppError(401, 'no-autenticado', 'No autenticado', { detail }),
   prohibido: () => new AppError(403, 'prohibido', 'Acceso denegado'),
   noEncontrado: (detail?: string, hint?: string) =>
     new AppError(404, 'no-encontrado', 'Recurso no encontrado', { detail, hint }),

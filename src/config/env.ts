@@ -54,7 +54,9 @@ function reglasCruzadas(entrada: Entrada): string[] {
     for (const clave of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET']) {
       const valor = entrada[clave] ?? '';
       if (valor.length < 32 || SECRETOS_EJEMPLO.test(valor)) {
-        errores.push(`${clave} (debe tener al menos 32 caracteres aleatorios en preview/production)`);
+        errores.push(
+          `${clave} (debe tener al menos 32 caracteres aleatorios en preview/production)`,
+        );
       }
     }
   }

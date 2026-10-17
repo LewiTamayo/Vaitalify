@@ -19,6 +19,7 @@
     "test:unit": "vitest run tests/unit",
     "test:coverage": "vitest run --coverage",
     "db:migrate": "prisma migrate deploy",
+    "db:migrate:test": "cross-env DOTENV_CONFIG_PATH=.env.test prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:perf": "tsx prisma/seed-perf.ts",
     "perf:start": "cross-env APP_ENV=perf RATE_LIMIT_ENABLED=false tsx src/local.ts"
