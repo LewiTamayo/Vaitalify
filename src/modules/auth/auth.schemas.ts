@@ -8,11 +8,9 @@ export const RegistroSchema = z
     nombre: nombreSchema,
     correo: correoSchema,
     contrasena: contrasenaSchema.openapi({ example: 'secreta123' }),
-    aceptaDatos: z
-      .boolean()
-      .openapi({
-        description: 'Autorización de tratamiento de datos (Ley 1581/2012). Debe ser true.',
-      }),
+    aceptaDatos: z.boolean().openapi({
+      description: 'Autorización de tratamiento de datos (Ley 1581/2012). Debe ser true.',
+    }),
   })
   .strict();
 

@@ -32,3 +32,13 @@ describe('hash y verificación', () => {
     await expect(verificarContrasena('secreta123', null)).resolves.toBe(false);
   });
 });
+
+describe('límite de 72 bytes de bcrypt', () => {
+  it('una contraseña de más de 72 bytes nunca verifica, aunque sus primeros 72 coincidan', async () => {
+    const exacta = 'a1' + 'x'.repeat(70);
+    expect(Buffer.byteLength(exacta)).toBe(72);
+    const hash = await hashContrasena(exacta);
+    await expect(verificarContrasena(exacta, hash)).resolves.toBe(true);
+    await expect(verificarContrasena(exacta + 'basura', hash)).resolves.toBe(false);
+  });
+});

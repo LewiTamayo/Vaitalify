@@ -48,3 +48,18 @@ y ejecuta `npm run db:migrate:test` antes de la primera corrida.
 | `GET /api/v1/health` | Estado de la API y de la base de datos |
 | `GET /api/v1/docs` | Swagger UI |
 | `GET /api/v1/openapi.json` | Especificación OpenAPI 3.1 |
+| `POST /api/v1/auth/registro` | Crea una cuenta (`aceptaDatos` debe ser `true`) |
+| `POST /api/v1/auth/login` | Inicia sesión → `accessToken` (15 min) + `refreshToken` (7 días) |
+| `POST /api/v1/auth/refresh` | Rota el refresh token |
+| `POST /api/v1/auth/logout` | Revoca el refresh token |
+| `GET/PATCH/DELETE /api/v1/usuarios/me` | Cuenta propia (consultar, editar, eliminar con todos sus datos) |
+| `GET /api/v1/usuarios/me/exportar` | Descarga todos los datos propios en JSON |
+
+Todas las rutas salvo `/health`, `/docs`, `/openapi.json`, registro, login y refresh exigen
+`Authorization: Bearer <accessToken>`.
+
+## Variables en Vercel
+
+Además de las de Neon (las inyecta la integración) y las de `.env.example`, en **Production** y **Preview**:
+`JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET` (≥ 32 caracteres aleatorios) y
+`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` (rate limiting; obligatorias).

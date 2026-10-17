@@ -37,3 +37,25 @@ Las desviaciones respecto al modelo ER del Entregable 2 (S-01 … S-17) están e
 | Timeout de conexión a PostgreSQL de 5 s. | Una BD inalcanzable no deja peticiones colgadas hasta el límite de Vercel (§17.2). |
 | En un build de Vercel, las migraciones exigen `DIRECT_URL` o `DATABASE_URL_UNPOOLED`. | `migrate deploy` a través del pooler puede fallar; nunca se usa la URL con pooling para migrar en Vercel. |
 | Bloques de horario: si la hora de dormir es posterior a medianoche, no se buscan micro-ventanas después de las 00:00 en el MVP. | Simplificación coherente con S-11. |
+
+## Fase 2 — Identidad
+
+| Decisión | Justificación |
+|---|---|
+| El refresh token es un JWT (firmado con `JWT_REFRESH_SECRET`, con `jti` aleatorio) y en la BD solo se guarda su SHA-256. | Si la BD se filtra, los tokens guardados no sirven. |
+| Reutilizar un refresh token ya rotado responde 401 y **revoca todas** las sesiones del usuario. | Indica un posible robo del token (detección de reutilización). La rotación usa una actualización condicional, así que dos peticiones simultáneas no pueden rotar el mismo token. |
+| Cambiar la contraseña cierra todas las sesiones. | Protege ante un dispositivo perdido o una sesión comprometida. |
+| Contraseña de 8 a 72 **bytes**, con al menos una letra y un número. | bcrypt ignora lo que pasa de 72 bytes; se rechaza para evitar colisiones silenciosas. |
+| El login ejecuta bcrypt incluso si el correo no existe (contra un hash ficticio) y responde siempre `Credenciales inválidas`. | No revela qué correos están registrados (§9). El registro con correo duplicado sí responde 409, como exige §6.1. |
+| El correo se normaliza (`trim` + minúsculas) antes de guardar y buscar. | `" Ana@Mail.com "` y `"ana@mail.com"` son la misma cuenta. |
+| `aceptaDatos: false` → 422 (regla de negocio), no 400. | El dato es válido en forma; incumple la Ley 1581/2012 (§6.1). |
+| Una cuenta eliminada con access token aún vigente recibe 401 en `/usuarios/me`. | El access token no consulta la BD (stateless); la cuenta se verifica al usarla. |
+| Rate limiting: login 5/min por IP; resto de `/auth/*` 10/min por IP; global 100/min por usuario (si trae un access token válido) o por IP. La IP es el primer valor de `x-forwarded-for` (Vercel lo fija). | §6.1 y §9. `/health` y la documentación quedan fuera del límite global. |
+| Upstash Redis con cuenta directa (upstash.com), no desde el Marketplace de Vercel. | La integración no estaba disponible en el panel del proyecto. En `preview`/`production` las credenciales son obligatorias (la app no arranca sin ellas si el rate limit está activo). |
+| El limitador es inyectable en `createApp({ fabricaLimitador })`. | Los tests de integración no chocan con los límites; un test dedicado verifica el 429 real. |
+| `crearAuthRouter` y `usuarios.service` comparten `auth/sesiones.service.ts`. | Evita una dependencia circular entre los servicios de `auth` y `usuarios` (§0.3). |
+| Presentar un refresh token ya revocado (rotado, cerrado con logout o por cambio de contraseña) cierra **todas** las sesiones. | No se distingue un cliente desactualizado de un token robado; ante la duda se protege la cuenta. |
+| Una contraseña de más de 72 bytes nunca verifica (login y `contrasenaActual`), aunque sus primeros 72 coincidan. | bcrypt solo compara los primeros 72 bytes; sin esto, «contraseña + cualquier texto» entraría. |
+| Al cambiar la contraseña, las sesiones se cierran **antes** de guardar el nuevo hash. | Si el cierre falla, la contraseña no cambia; nunca queda una contraseña nueva con sesiones viejas vivas. |
+| `PATCH /usuarios/me` con `contrasena` se limita como el login: 5/min por usuario. | Un access token robado no sirve para adivinar `contrasenaActual` por fuerza bruta. |
+| Si Upstash no responde: el límite global deja pasar el tráfico (y lo registra); los límites de autenticación responden 503. | Una caída de Upstash no tumba toda la API, pero tampoco abre la puerta a la fuerza bruta. |

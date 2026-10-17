@@ -149,6 +149,17 @@ describe('POST /auth/refresh', () => {
     expect((await refrescar(rotado.body.refreshToken as string)).status).toBe(401);
   });
 
+  it('dos rotaciones simultáneas del mismo token: nunca dos sesiones nuevas', async () => {
+    const sesion = await registrar(app);
+    const respuestas = await Promise.all([
+      refrescar(sesion.refreshToken),
+      refrescar(sesion.refreshToken),
+    ]);
+    const exitosas = respuestas.filter((r) => r.status === 200);
+    expect(exitosas.length).toBeLessThanOrEqual(1);
+    expect(respuestas.every((r) => r.status === 200 || r.status === 401)).toBe(true);
+  });
+
   it('token basura → 401', async () => {
     expect((await refrescar('x.y.z')).status).toBe(401);
   });
