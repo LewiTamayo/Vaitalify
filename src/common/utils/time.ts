@@ -1,7 +1,16 @@
+import { z } from 'zod';
+// Registra la extensión .openapi() de Zod antes de usarla aquí.
+import '../openapi/registry.js';
+
 // Las columnas TIME de PostgreSQL llegan desde Prisma como Date en 1970-01-01 (UTC).
 // La API siempre expone las horas como "HH:mm".
 
 const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+export const HoraSchema = z
+  .string()
+  .regex(HHMM, 'Hora inválida: usa el formato HH:mm (00:00 a 23:59)')
+  .openapi({ example: '07:00' });
 const MINUTOS_DIA = 1440;
 
 function partes(hhmm: string): [number, number] {
