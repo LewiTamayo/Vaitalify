@@ -34,6 +34,13 @@ export async function listar(idUsuario: number, filtros: FiltrosBloques) {
   return { filas, total };
 }
 
+// Una sola sentencia INSERT: o se guardan todos los bloques o ninguno.
+export function importar(idUsuario: number, bloques: DatosBloque[]) {
+  return prisma.bloqueHorario.createManyAndReturn({
+    data: bloques.map((b) => ({ idUsuario, ...aFila(b), origen: 'importado' as const })),
+  });
+}
+
 // Toda consulta por id incluye idUsuario: un bloque ajeno se comporta como inexistente.
 export function buscar(idUsuario: number, idBloque: number) {
   return prisma.bloqueHorario.findFirst({ where: { idBloque, idUsuario } });

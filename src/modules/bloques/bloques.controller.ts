@@ -1,5 +1,10 @@
 import type { Request, Response } from 'express';
-import type { DatosBloque, DatosBloqueParcial, FiltrosBloques } from './bloques.schemas.js';
+import type {
+  DatosBloque,
+  DatosBloqueParcial,
+  FiltrosBloques,
+  ImportarBloques,
+} from './bloques.schemas.js';
 import * as servicio from './bloques.service.js';
 
 // requireAuth garantiza req.usuario; validate garantiza params.id.
@@ -9,6 +14,11 @@ const idBloque = (req: Request) => (req.valid.params as { id: number }).id;
 export async function crear(req: Request, res: Response): Promise<void> {
   const bloque = await servicio.crear(idUsuario(req), req.valid.body as DatosBloque);
   res.status(201).location(`/api/v1/bloques/${bloque.idBloque}`).json(bloque);
+}
+
+export async function importar(req: Request, res: Response): Promise<void> {
+  const { bloques } = req.valid.body as ImportarBloques;
+  res.status(201).json(await servicio.importar(idUsuario(req), bloques));
 }
 
 export async function listar(req: Request, res: Response): Promise<void> {

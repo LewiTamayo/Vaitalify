@@ -28,6 +28,14 @@ export async function crear(idUsuario: number, datos: DatosBloque): Promise<Bloq
   return aDto(await repo.crear(idUsuario, datos));
 }
 
+export async function importar(
+  idUsuario: number,
+  bloques: DatosBloque[],
+): Promise<{ importados: number; bloques: BloqueDto[] }> {
+  const filas = await repo.importar(idUsuario, bloques);
+  return { importados: filas.length, bloques: filas.map(aDto) };
+}
+
 export async function listar(
   idUsuario: number,
   filtros: FiltrosBloques,

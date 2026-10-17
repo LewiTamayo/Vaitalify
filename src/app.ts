@@ -11,7 +11,7 @@ import { REGLAS, fabricaPorDefecto, type FabricaLimitador } from './common/ratel
 import { env } from './config/env.js';
 import { crearAuthRouter } from './modules/auth/auth.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
-import { bloquesRouter } from './modules/bloques/bloques.routes.js';
+import { RUTA_IMPORTAR, bloquesRouter } from './modules/bloques/bloques.routes.js';
 import { perfilRouter } from './modules/perfil/perfil.routes.js';
 import { crearUsuariosRouter } from './modules/usuarios/usuarios.routes.js';
 
@@ -29,7 +29,15 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   app.set('trust proxy', true);
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGINS }));
-  app.use(express.json({ limit: '100kb' }));
+  // Límite general de 100 kB; la importación de bloques usa su propio parser de 1 MB.
+  const jsonGeneral = express.json({ limit: '100kb' });
+  app.use((req, res, next) => {
+    if (req.path === `/api/v1${RUTA_IMPORTAR}`) {
+      next();
+      return;
+    }
+    jsonGeneral(req, res, next);
+  });
   app.use(pinoHttp({ logger }));
 
   // Todos los módulos se montan aquí. /health y la documentación quedan fuera del límite global.

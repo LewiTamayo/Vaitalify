@@ -48,6 +48,17 @@ export const FiltrosBloquesSchema = PaginacionSchema.extend({
   diaSemana: z.coerce.number().pipe(DiaSemanaSchema).optional(),
 });
 
+export const MAX_IMPORTACION = 200;
+
+export const ImportarBloquesSchema = z
+  .object({
+    bloques: z
+      .array(BloqueSchema)
+      .min(1, 'Envía al menos un bloque')
+      .max(MAX_IMPORTACION, `Se pueden importar como máximo ${MAX_IMPORTACION} bloques por lote`),
+  })
+  .strict();
+
 export const BloqueRespuestaSchema = registry.register(
   'Bloque',
   BloqueBaseSchema.extend({
@@ -59,7 +70,13 @@ export const BloqueRespuestaSchema = registry.register(
 export type DatosBloque = z.infer<typeof BloqueSchema>;
 export type DatosBloqueParcial = z.infer<typeof BloqueParcialSchema>;
 export type FiltrosBloques = z.infer<typeof FiltrosBloquesSchema>;
+export type ImportarBloques = z.infer<typeof ImportarBloquesSchema>;
 export type BloqueDto = z.infer<typeof BloqueRespuestaSchema>;
+
+export const ImportacionRespuestaSchema = registry.register(
+  'ImportacionBloques',
+  z.object({ importados: z.number().int(), bloques: z.array(BloqueRespuestaSchema) }),
+);
 
 // Reglas sobre un bloque ya combinado (PATCH).
 export function validarBloque(datos: DatosBloque): void {
