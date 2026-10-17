@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { IdParamSchema } from '../../common/http/params.js';
 import { requireAuth } from '../../common/middleware/auth.js';
+import { idempotencia } from '../../common/middleware/idempotency.js';
 import { validate } from '../../common/middleware/validate.js';
 import {
   cuerpoJson,
@@ -62,7 +63,16 @@ registry.registerPath({
   ...conId,
   method: 'patch',
   summary: 'Registra el cumplimiento: pendiente, hecha u omitida (admite Idempotency-Key)',
-  request: { ...conId.request, body: cuerpoJson(CambiarEstadoSchema) },
+  request: {
+    ...conId.request,
+    headers: z.object({
+      'Idempotency-Key': z
+        .string()
+        .optional()
+        .openapi({ description: 'Reintentos offline: misma clave → misma respuesta (24 h)' }),
+    }),
+    body: cuerpoJson(CambiarEstadoSchema),
+  },
   responses: { 200: respuesta('Micro-pausa'), ...respuestasError(400, 401, 404, 422) },
 });
 registry.registerPath({
@@ -95,6 +105,7 @@ microPausasRouter.get('/micro-pausas/hoy', controller.hoy);
 microPausasRouter.get('/micro-pausas/:id', id, controller.obtener);
 microPausasRouter.patch(
   '/micro-pausas/:id',
+  idempotencia(),
   validate({ params: IdParamSchema, body: CambiarEstadoSchema }),
   controller.cambiarEstado,
 );
