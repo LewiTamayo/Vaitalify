@@ -11,6 +11,8 @@ const base = {
   JWT_ACCESS_SECRET: SECRETO_A,
   JWT_REFRESH_SECRET: SECRETO_B,
   CORS_ORIGINS: 'http://localhost:5173, https://app.vitalify.dev ,',
+  UPSTASH_REDIS_REST_URL: 'https://base.upstash.io',
+  UPSTASH_REDIS_REST_TOKEN: 'token-base',
 };
 
 describe('parseEnv', () => {
@@ -100,5 +102,31 @@ describe('parseEnv en Vercel', () => {
   it('VERCEL_ENV=development se trata como local', () => {
     const sinAppEnv = { ...base, APP_ENV: undefined };
     expect(parseEnv({ ...sinAppEnv, VERCEL_ENV: 'development' }).APP_ENV).toBe('local');
+  });
+});
+
+describe('parseEnv: Upstash en entornos públicos', () => {
+  it('exige credenciales de Upstash en production con rate limit activo', () => {
+    const sinUpstash = {
+      ...base,
+      UPSTASH_REDIS_REST_URL: undefined,
+      UPSTASH_REDIS_REST_TOKEN: undefined,
+    };
+    expect(() => parseEnv({ ...sinUpstash, APP_ENV: 'production' })).toThrow(
+      /UPSTASH_REDIS_REST_URL/,
+    );
+    expect(parseEnv({ ...sinUpstash, APP_ENV: 'perf', RATE_LIMIT_ENABLED: 'false' }).APP_ENV).toBe(
+      'perf',
+    );
+  });
+
+  it('acepta production con credenciales de Upstash', () => {
+    const env = parseEnv({
+      ...base,
+      APP_ENV: 'production',
+      UPSTASH_REDIS_REST_URL: 'https://x.upstash.io',
+      UPSTASH_REDIS_REST_TOKEN: 'token',
+    });
+    expect(env.UPSTASH_REDIS_REST_URL).toBe('https://x.upstash.io');
   });
 });

@@ -60,6 +60,14 @@ function reglasCruzadas(entrada: Entrada): string[] {
       }
     }
   }
+  const rateLimitActivo = entrada.RATE_LIMIT_ENABLED !== 'false';
+  if (ENTORNOS_PUBLICOS.has(appEnv) && rateLimitActivo) {
+    for (const clave of ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
+      if (!entrada[clave]) {
+        errores.push(`${clave} (obligatoria en preview/production para el rate limiting)`);
+      }
+    }
+  }
   return errores;
 }
 
