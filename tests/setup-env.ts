@@ -15,6 +15,8 @@ const defaults: Record<string, string> = {
   JWT_ACCESS_SECRET: randomBytes(32).toString('hex'),
   JWT_REFRESH_SECRET: randomBytes(32).toString('hex'),
   CORS_ORIGINS: 'http://localhost:5173',
+  // Coste mínimo permitido: los tests no miden bcrypt y así corren más rápido.
+  BCRYPT_COST: '10',
 };
 
 for (const [clave, valor] of Object.entries(defaults)) {
