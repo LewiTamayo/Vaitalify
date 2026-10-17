@@ -38,6 +38,7 @@ const DESCRIPCION_ERROR: Record<number, string> = {
   409: 'Conflicto (duplicado)',
   422: 'Regla de negocio incumplida',
   429: 'Demasiadas peticiones',
+  503: 'Servicio no disponible',
 };
 
 // Respuestas RFC 7807 comunes para registerPath.

@@ -11,7 +11,7 @@ import { REGLAS, fabricaPorDefecto, type FabricaLimitador } from './common/ratel
 import { env } from './config/env.js';
 import { crearAuthRouter } from './modules/auth/auth.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
-import { usuariosRouter } from './modules/usuarios/usuarios.routes.js';
+import { crearUsuariosRouter } from './modules/usuarios/usuarios.routes.js';
 
 export interface OpcionesApp {
   // Inyectable para que los tests no choquen con los límites reales.
@@ -34,9 +34,9 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   const apiRouter = Router();
   apiRouter.use(healthRouter);
   apiRouter.use(docsRouter);
-  apiRouter.use(rateLimit(fabrica(REGLAS.global), claveUsuarioOIp));
+  apiRouter.use(rateLimit(fabrica(REGLAS.global), claveUsuarioOIp, { siFalla: 'permitir' }));
   apiRouter.use(crearAuthRouter(fabrica));
-  apiRouter.use(usuariosRouter);
+  apiRouter.use(crearUsuariosRouter(fabrica));
 
   app.get('/', (_req, res) => {
     res.redirect(302, '/api/v1/docs');

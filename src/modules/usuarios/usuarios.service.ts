@@ -63,14 +63,15 @@ export async function actualizar(
   cambios: ActualizarUsuario,
 ): Promise<UsuarioDto> {
   const contrasenaHash = await nuevoHashSiCambia(idUsuario, cambios);
+  // Cambiar la contraseña cierra todas las sesiones (p. ej., un dispositivo perdido). Se cierran
+  // ANTES de guardar: si esto falla, la contraseña no cambia y no quedan sesiones viejas vivas.
+  if (contrasenaHash) await cerrarTodasLasSesiones(idUsuario);
   try {
     const u = await repo.actualizar(idUsuario, {
       nombre: cambios.nombre,
       correo: cambios.correo,
       contrasenaHash,
     });
-    // Cambiar la contraseña cierra todas las sesiones abiertas (p. ej., en un dispositivo perdido).
-    if (contrasenaHash) await cerrarTodasLasSesiones(idUsuario);
     return aDto(u);
   } catch (error) {
     if (esUnicoViolado(error)) throw correoDuplicado();

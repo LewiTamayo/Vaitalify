@@ -37,3 +37,26 @@ describe('rateLimit', () => {
     expect(mismaIp.status).toBe(429);
   });
 });
+
+describe('rateLimit cuando el store falla (p. ej., Upstash caído)', () => {
+  const roto = { consumir: () => Promise.reject(new Error('Upstash no responde')) };
+
+  function appCon(siFalla: 'permitir' | 'rechazar') {
+    const app = express();
+    app.get('/x', rateLimit(roto, ipCliente, { siFalla }), (_req, res) => {
+      res.json({ ok: true });
+    });
+    app.use(errorHandler);
+    return app;
+  }
+
+  it("siFalla='permitir' (límite global): la API sigue respondiendo", async () => {
+    expect((await request(appCon('permitir')).get('/x')).status).toBe(200);
+  });
+
+  it("siFalla='rechazar' (login): 503 problem+json, nunca un 500", async () => {
+    const res = await request(appCon('rechazar')).get('/x');
+    expect(res.status).toBe(503);
+    expect(res.body.type).toBe('https://vitalify.app/errors/servicio-no-disponible');
+  });
+});

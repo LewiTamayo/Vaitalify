@@ -54,3 +54,8 @@ Las desviaciones respecto al modelo ER del Entregable 2 (S-01 … S-17) están e
 | Upstash Redis con cuenta directa (upstash.com), no desde el Marketplace de Vercel. | La integración no estaba disponible en el panel del proyecto. En `preview`/`production` las credenciales son obligatorias (la app no arranca sin ellas si el rate limit está activo). |
 | El limitador es inyectable en `createApp({ fabricaLimitador })`. | Los tests de integración no chocan con los límites; un test dedicado verifica el 429 real. |
 | `crearAuthRouter` y `usuarios.service` comparten `auth/sesiones.service.ts`. | Evita una dependencia circular entre los servicios de `auth` y `usuarios` (§0.3). |
+| Presentar un refresh token ya revocado (rotado, cerrado con logout o por cambio de contraseña) cierra **todas** las sesiones. | No se distingue un cliente desactualizado de un token robado; ante la duda se protege la cuenta. |
+| Una contraseña de más de 72 bytes nunca verifica (login y `contrasenaActual`), aunque sus primeros 72 coincidan. | bcrypt solo compara los primeros 72 bytes; sin esto, «contraseña + cualquier texto» entraría. |
+| Al cambiar la contraseña, las sesiones se cierran **antes** de guardar el nuevo hash. | Si el cierre falla, la contraseña no cambia; nunca queda una contraseña nueva con sesiones viejas vivas. |
+| `PATCH /usuarios/me` con `contrasena` se limita como el login: 5/min por usuario. | Un access token robado no sirve para adivinar `contrasenaActual` por fuerza bruta. |
+| Si Upstash no responde: el límite global deja pasar el tráfico (y lo registra); los límites de autenticación responden 503. | Una caída de Upstash no tumba toda la API, pero tampoco abre la puerta a la fuerza bruta. |

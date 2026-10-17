@@ -94,3 +94,86 @@ describe('construirExportacion', () => {
     expect(resultado.usuario.correo).toBe('ana@correo.com');
   });
 });
+
+describe('construirExportacion con todas las relaciones', () => {
+  const completo = {
+    ...fixture,
+    perfil: null,
+    progreso: null,
+    microVentanas: [
+      {
+        idVentana: 9,
+        idUsuario: 7,
+        fecha: parseFecha('2026-10-06'),
+        horaInicio: parseHHmm('10:00'),
+        duracionMin: 15,
+        microPausa: {
+          idPausa: 2,
+          idVentana: 9,
+          idActividad: 4,
+          estado: 'hecha',
+          fechaRegistro: new Date('2026-10-06T15:12:00Z'),
+        },
+      },
+      {
+        idVentana: 10,
+        idUsuario: 7,
+        fecha: parseFecha('2026-10-07'),
+        horaInicio: parseHHmm('12:30'),
+        duracionMin: 5,
+        microPausa: null,
+      },
+    ],
+    recordatorios: [
+      {
+        idRecordatorio: 1,
+        idUsuario: 7,
+        tipo: 'sueno',
+        mensaje: 'Deja las pantallas',
+        fechaHoraEnvio: new Date('2026-10-06T03:15:00Z'),
+        enviado: false,
+      },
+    ],
+    insignias: [
+      {
+        idUsuario: 7,
+        idInsignia: 1,
+        fechaObtencion: parseFecha('2026-10-06'),
+        insignia: { idInsignia: 1, codigo: 'DIEZ_PAUSAS', nombre: '10 pausas' },
+      },
+    ],
+  } as unknown as UsuarioConRelaciones;
+
+  const resultado = construirExportacion(completo, new Date('2026-10-17T12:00:00Z'));
+
+  it('incluye micro-ventanas con su pausa, recordatorios e insignias', () => {
+    expect(resultado.microVentanas).toEqual([
+      {
+        idVentana: 9,
+        fecha: '2026-10-06',
+        horaInicio: '10:00',
+        duracionMin: 15,
+        microPausa: {
+          idPausa: 2,
+          idActividad: 4,
+          estado: 'hecha',
+          fechaRegistro: '2026-10-06T15:12:00.000Z',
+        },
+      },
+      { idVentana: 10, fecha: '2026-10-07', horaInicio: '12:30', duracionMin: 5, microPausa: null },
+    ]);
+    expect(resultado.recordatorios[0]).toMatchObject({
+      tipo: 'sueno',
+      fechaHoraEnvio: '2026-10-06T03:15:00.000Z',
+      enviado: false,
+    });
+    expect(resultado.insignias).toEqual([
+      { codigo: 'DIEZ_PAUSAS', nombre: '10 pausas', fechaObtencion: '2026-10-06' },
+    ]);
+  });
+
+  it('perfil y progreso ausentes se exportan como null', () => {
+    expect(resultado.perfil).toBeNull();
+    expect(resultado.progreso).toBeNull();
+  });
+});

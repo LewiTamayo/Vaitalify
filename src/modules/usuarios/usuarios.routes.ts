@@ -1,8 +1,10 @@
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../../common/middleware/auth.js';
+import { rateLimit } from '../../common/middleware/rate-limit.js';
 import { validate } from '../../common/middleware/validate.js';
 import { cuerpoJson, registry, respuestasError } from '../../common/openapi/registry.js';
+import { REGLAS, type FabricaLimitador } from '../../common/ratelimit/limitador.js';
 import * as controller from './usuarios.controller.js';
 import { ActualizarUsuarioSchema, UsuarioSchema } from './usuarios.schemas.js';
 
@@ -27,7 +29,7 @@ registry.registerPath({
   request: { body: cuerpoJson(ActualizarUsuarioSchema) },
   responses: {
     200: { description: 'Cuenta actualizada', ...cuerpoJson(UsuarioSchema) },
-    ...respuestasError(400, 401, 409, 422),
+    ...respuestasError(400, 401, 409, 422, 429),
   },
 });
 
@@ -50,14 +52,31 @@ registry.registerPath({
   },
 });
 
-export const usuariosRouter = Router();
+// Cambiar la contraseña exige contrasenaActual: se limita como el login (por usuario) para que
+// un access token robado no sirva para adivinarla por fuerza bruta.
+function limiteCambioContrasena(fabrica: FabricaLimitador): RequestHandler {
+  const limite = rateLimit(fabrica(REGLAS.login), (req) => `usuario:${req.usuario!.idUsuario}`);
+  return (req, res, next) => {
+    const cuerpo = req.body as { contrasena?: unknown } | undefined;
+    if (cuerpo?.contrasena === undefined) {
+      next();
+      return;
+    }
+    void limite(req, res, next);
+  };
+}
 
-usuariosRouter.use('/usuarios/me', requireAuth);
-usuariosRouter.get('/usuarios/me', controller.obtener);
-usuariosRouter.patch(
-  '/usuarios/me',
-  validate({ body: ActualizarUsuarioSchema }),
-  controller.actualizar,
-);
-usuariosRouter.delete('/usuarios/me', controller.eliminar);
-usuariosRouter.get('/usuarios/me/exportar', controller.exportar);
+export function crearUsuariosRouter(fabrica: FabricaLimitador): Router {
+  const router = Router();
+  router.use('/usuarios/me', requireAuth);
+  router.get('/usuarios/me', controller.obtener);
+  router.patch(
+    '/usuarios/me',
+    limiteCambioContrasena(fabrica),
+    validate({ body: ActualizarUsuarioSchema }),
+    controller.actualizar,
+  );
+  router.delete('/usuarios/me', controller.eliminar);
+  router.get('/usuarios/me/exportar', controller.exportar);
+  return router;
+}
