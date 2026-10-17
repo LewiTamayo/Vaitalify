@@ -3,7 +3,16 @@ import tseslint from 'typescript-eslint';
 import sonarjs from 'eslint-plugin-sonarjs';
 
 export default tseslint.config(
-  { ignores: ['src/generated/**', 'coverage/**', 'reports/**', 'node_modules/**', '.superpowers/**', 'eslint.config.mjs'] },
+  {
+    ignores: [
+      'src/generated/**',
+      'coverage/**',
+      'reports/**',
+      'node_modules/**',
+      '.superpowers/**',
+      'eslint.config.mjs',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   sonarjs.configs.recommended,
@@ -13,6 +22,18 @@ export default tseslint.config(
     },
     rules: {
       'no-console': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+  {
+    // En los tests, res.body de Supertest es `any` por diseño.
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
     },
   },
 );
