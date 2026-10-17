@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
     setupFiles: ['tests/setup-env.ts'],
+    globalSetup: ['tests/global-setup.ts'],
     // Reporte de ejecución en el formato genérico que lee SonarQube
     reporters: ['default', ['vitest-sonar-reporter', { outputFile: 'reports/sonar-report.xml' }]],
     coverage: {

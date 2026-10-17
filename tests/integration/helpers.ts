@@ -40,6 +40,16 @@ export async function registrar(app: Express, correo = correoUnico()): Promise<S
   return { ...(res.body as Omit<SesionTest, 'correo'>), correo };
 }
 
+// Usuario con rol admin: se promueve en la BD y se vuelve a iniciar sesión para un token con ese rol.
+export async function crearAdmin(app: Express): Promise<SesionTest> {
+  const sesion = await registrar(app);
+  await prisma.usuario.update({ where: { correo: sesion.correo }, data: { rol: 'admin' } });
+  const res = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ correo: sesion.correo, contrasena: CONTRASENA });
+  return { ...(res.body as Omit<SesionTest, 'correo'>), correo: sesion.correo };
+}
+
 export function bearer(sesion: SesionTest): [string, string] {
   return ['authorization', `Bearer ${sesion.accessToken}`];
 }
