@@ -58,6 +58,19 @@ y ejecuta `npm run db:migrate:test` antes de la primera corrida.
 | `POST/GET /api/v1/bloques` | Crear y listar bloques de horario (`?tipo`, `?diaSemana`, `?page`, `?pageSize`) |
 | `GET/PUT/PATCH/DELETE /api/v1/bloques/:id` | Un bloque propio (los ajenos responden 404) |
 | `POST /api/v1/bloques/importar` | Importa hasta 200 bloques de una vez (todos o ninguno) |
+| `GET /api/v1/actividades`, `GET /api/v1/actividades/:id` | Catálogo de actividades (`?categoria`, `?maxDuracionMin`); escritura solo `admin` |
+| `POST /api/v1/micro-ventanas/recalcular` | Recalcula las micro-ventanas (se hace solo al cambiar bloques o perfil) |
+| `GET /api/v1/micro-ventanas`, `GET/DELETE /api/v1/micro-ventanas/:id` | Micro-ventanas libres (`?desde`, `?hasta`, `?conPausa`) |
+| `POST /api/v1/micro-ventanas/:id/micro-pausa` | Recomienda una micro-pausa para la ventana |
+| `GET /api/v1/micro-pausas`, `GET /api/v1/micro-pausas/hoy` | Micro-pausas (todas o las de hoy) |
+| `PATCH /api/v1/micro-pausas/:id` | Registra el cumplimiento (`{ "estado": "hecha" }`); admite `Idempotency-Key` |
+| `PUT/DELETE /api/v1/micro-pausas/:id` | Cambia la actividad (si está pendiente) o elimina |
+
+### Reintentos sin conexión
+
+`PATCH /micro-pausas/:id` acepta la cabecera opcional `Idempotency-Key`. Si la app reenvía la misma
+petición con la misma clave (p. ej. al recuperar la conexión), recibe la respuesta original con
+`Idempotent-Replayed: true` y la operación no se repite.
 
 Todas las rutas salvo `/health`, `/docs`, `/openapi.json`, registro, login y refresh exigen
 `Authorization: Bearer <accessToken>`.
