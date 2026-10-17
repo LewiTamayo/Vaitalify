@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Las URLs (DATABASE_URL con pooling en runtime, DIRECT_URL sin pooling para migraciones)
+// se configuran en prisma.config.ts y src/common/db/prisma.ts (Prisma 7).
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  user
+  admin
+}
+
+enum TipoBloque {
+  trabajo
+  estudio
+  viaje
+}
+
+enum OrigenBloque {
+  manual
+  importado
+}
+
+enum EstadoMicroPausa {
+  pendiente
+  hecha
+  omitida
+}
+
+enum TipoRecordatorio {
+  sueno
+  pausa
+}
+
+enum TipoConfigNotificacion {
+  sueno
+  pausa
+  logros
+}
+
+model Usuario {
+  idUsuario      Int      @id @default(autoincrement()) @map("id_usuario")
+  nombre         String   @db.VarChar(80)
+  correo         String   @unique @db.VarChar(120)
+  contrasenaHash String   @map("contrasena_hash") @db.VarChar(255)
+  fechaRegistro  DateTime @default(now()) @map("fecha_registro")
+  aceptaDatos    Boolean  @map("acepta_datos") // Ley 1581/2012
+  rol            Rol      @default(user) // +
+
+  perfil         PerfilHabitos?
+  bloques        BloqueHorario[]
+  microVentanas  MicroVentana[]
+  registrosSueno RegistroSueno[]
+  recordatorios  Recordatorio[]
+  configs        ConfigNotificacion[]
+  progreso       Progreso?
+  insignias      UsuarioInsignia[]
+  refreshTokens  RefreshToken[] // +
+
+  @@map("usuario")
+}
+
+model RefreshToken {
+  idToken   Int      @id @default(autoincrement()) @map("id_token")
+  idUsuario Int      @map("id_usuario")
+  tokenHash String   @unique @map("token_hash") @db.VarChar(64)
+  expiraEn  DateTime @map("expira_en")
+  revocado  Boolean  @default(false)
+  usuario   Usuario  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@map("refresh_token")
+}
+
+model PerfilHabitos {
+  idPerfil         Int      @id @default(autoincrement()) @map("id_perfil")
+  idUsuario        Int      @unique @map("id_usuario")
+  horaDormir       DateTime @map("hora_dormir") @db.Time(0)
+  horaDespertar    DateTime @map("hora_despertar") @db.Time(0)
+  metaHorasSueno   Decimal  @map("meta_horas_sueno") @db.Decimal(3, 1)
+  metaMinActividad Int      @map("meta_min_actividad")
+  usuario          Usuario  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@map("perfil_habitos")
+}
+
+model BloqueHorario {
+  idBloque   Int          @id @default(autoincrement()) @map("id_bloque")
+  idUsuario  Int          @map("id_usuario")
+  tipo       TipoBloque
+  titulo     String       @db.VarChar(80)
+  diaSemana  Int          @map("dia_semana") @db.SmallInt // 1=Lunes … 7=Domingo (ISO)
+  horaInicio DateTime     @map("hora_inicio") @db.Time(0)
+  horaFin    DateTime     @map("hora_fin") @db.Time(0)
+  origen     OrigenBloque @default(manual)
+  usuario    Usuario      @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@index([idUsuario, diaSemana])
+  @@map("bloque_horario")
+}
+
+model MicroVentana {
+  idVentana   Int         @id @default(autoincrement()) @map("id_ventana")
+  idUsuario   Int         @map("id_usuario")
+  fecha       DateTime    @db.Date
+  horaInicio  DateTime    @map("hora_inicio") @db.Time(0)
+  duracionMin Int         @map("duracion_min") @db.SmallInt
+  usuario     Usuario     @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+  microPausa  MicroPausa?
+
+  @@unique([idUsuario, fecha, horaInicio])
+  @@map("micro_ventana")
+}
+
+model Actividad {
+  idActividad   Int          @id @default(autoincrement()) @map("id_actividad")
+  nombre        String       @db.VarChar(80)
+  categoria     String       @db.VarChar(40) // estiramiento | caminata | bajo_impacto
+  duracionMin   Int          @map("duracion_min") @db.SmallInt
+  instrucciones String       @db.Text
+  microPausas   MicroPausa[]
+
+  @@map("actividad")
+}
+
+model MicroPausa {
+  idPausa       Int              @id @default(autoincrement()) @map("id_pausa")
+  idVentana     Int              @unique @map("id_ventana")
+  idActividad   Int              @map("id_actividad")
+  estado        EstadoMicroPausa @default(pendiente)
+  fechaRegistro DateTime?        @map("fecha_registro")
+  ventana       MicroVentana     @relation(fields: [idVentana], references: [idVentana], onDelete: Cascade)
+  actividad     Actividad        @relation(fields: [idActividad], references: [idActividad], onDelete: Restrict)
+
+  @@map("micro_pausa")
+}
+
+model RegistroSueno {
+  idRegistro    Int      @id @default(autoincrement()) @map("id_registro")
+  idUsuario     Int      @map("id_usuario")
+  fecha         DateTime @db.Date // noche que se reporta (fecha del despertar)
+  horasDormidas Decimal  @map("horas_dormidas") @db.Decimal(3, 1)
+  usuario       Usuario  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@unique([idUsuario, fecha]) // +
+  @@map("registro_sueno")
+}
+
+model Recordatorio {
+  idRecordatorio Int              @id @default(autoincrement()) @map("id_recordatorio")
+  idUsuario      Int              @map("id_usuario")
+  tipo           TipoRecordatorio
+  mensaje        String           @db.VarChar(160)
+  fechaHoraEnvio DateTime         @map("fecha_hora_envio")
+  enviado        Boolean          @default(false)
+  usuario        Usuario          @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@index([enviado, fechaHoraEnvio])
+  @@map("recordatorio")
+}
+
+model ConfigNotificacion {
+  idConfig       Int                    @id @default(autoincrement()) @map("id_config")
+  idUsuario      Int                    @map("id_usuario")
+  tipo           TipoConfigNotificacion
+  activa         Boolean                @default(true)
+  silencioInicio DateTime?              @map("silencio_inicio") @db.Time(0)
+  silencioFin    DateTime?              @map("silencio_fin") @db.Time(0)
+  usuario        Usuario                @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@unique([idUsuario, tipo]) // +
+  @@map("config_notificacion")
+}
+
+model Progreso {
+  idProgreso        Int       @id @default(autoincrement()) @map("id_progreso")
+  idUsuario         Int       @unique @map("id_usuario")
+  puntosTotales     Int       @default(0) @map("puntos_totales")
+  rachaActual       Int       @default(0) @map("racha_actual") @db.SmallInt
+  rachaMaxima       Int       @default(0) @map("racha_maxima") @db.SmallInt
+  diasComodin       Int       @default(2) @map("dias_comodin") @db.SmallInt
+  ultimaFechaActiva DateTime? @map("ultima_fecha_activa") @db.Date // +
+  semanaComodin     String?   @map("semana_comodin") @db.VarChar(8) // + "2026-W41"
+  usuario           Usuario   @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@map("progreso")
+}
+
+model IdempotencyKey {
+  clave      String   @id @db.VarChar(100) // "<idUsuario>:<Idempotency-Key>"
+  metodoRuta String   @map("metodo_ruta") @db.VarChar(120)
+  codigo     Int // status HTTP devuelto
+  respuesta  Json
+  creadaEn   DateTime @default(now()) @map("creada_en")
+
+  @@index([creadaEn])
+  @@map("idempotency_key")
+}
+
+model Insignia {
+  idInsignia  Int               @id @default(autoincrement()) @map("id_insignia")
+  codigo      String            @unique @db.VarChar(40) // +
+  nombre      String            @db.VarChar(60)
+  descripcion String            @db.VarChar(160)
+  criterio    String            @db.VarChar(120)
+  usuarios    UsuarioInsignia[]
+
+  @@map("insignia")
+}
+
+model UsuarioInsignia {
+  idUsuario      Int      @map("id_usuario")
+  idInsignia     Int      @map("id_insignia")
+  fechaObtencion DateTime @default(now()) @map("fecha_obtencion") @db.Date
+  usuario        Usuario  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+  insignia       Insignia @relation(fields: [idInsignia], references: [idInsignia], onDelete: Cascade)
+
+  @@id([idUsuario, idInsignia])
+  @@map("usuario_insignia")
+}
