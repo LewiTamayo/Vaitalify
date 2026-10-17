@@ -1,7 +1,10 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../../src/common/db/prisma.js', () => ({ prisma: { $queryRaw: vi.fn() } }));
+vi.mock('../../../../src/common/db/prisma.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  prisma: { $queryRaw: vi.fn() },
+}));
 
 const { default: app } = await import('../../../../src/app.js');
 
@@ -12,6 +15,10 @@ describe('OpenAPI y Swagger UI', () => {
     expect(String(res.body.openapi)).toMatch(/^3\.1/);
     expect(res.body.info.title).toBe('Vitalify API');
     expect(res.body.paths['/health']).toBeDefined();
+    for (const ruta of ['/auth/registro', '/auth/login', '/auth/refresh', '/auth/logout']) {
+      expect(res.body.paths[ruta]?.post).toBeDefined();
+    }
+    expect(res.body.components.schemas.Sesion).toBeDefined();
     expect(res.body.components.securitySchemes.bearerAuth).toBeDefined();
   });
 

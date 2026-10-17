@@ -9,6 +9,7 @@ import { rateLimit } from './common/middleware/rate-limit.js';
 import { docsRouter } from './common/openapi/docs.js';
 import { REGLAS, fabricaPorDefecto, type FabricaLimitador } from './common/ratelimit/limitador.js';
 import { env } from './config/env.js';
+import { crearAuthRouter } from './modules/auth/auth.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 
 export interface OpcionesApp {
@@ -33,6 +34,7 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   apiRouter.use(healthRouter);
   apiRouter.use(docsRouter);
   apiRouter.use(rateLimit(fabrica(REGLAS.global), claveUsuarioOIp));
+  apiRouter.use(crearAuthRouter(fabrica));
 
   app.get('/', (_req, res) => {
     res.redirect(302, '/api/v1/docs');

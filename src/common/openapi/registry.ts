@@ -30,6 +30,33 @@ export const ProblemSchema = registry.register(
     .openapi({ description: 'Error RFC 7807 (application/problem+json)' }),
 );
 
+const DESCRIPCION_ERROR: Record<number, string> = {
+  400: 'Datos inválidos',
+  401: 'No autenticado',
+  403: 'Sin permisos',
+  404: 'No existe o no es tuyo',
+  409: 'Conflicto (duplicado)',
+  422: 'Regla de negocio incumplida',
+  429: 'Demasiadas peticiones',
+};
+
+// Respuestas RFC 7807 comunes para registerPath.
+export function respuestasError(...codigos: number[]) {
+  return Object.fromEntries(
+    codigos.map((codigo) => [
+      codigo,
+      {
+        description: DESCRIPCION_ERROR[codigo] ?? 'Error',
+        content: { 'application/problem+json': { schema: ProblemSchema } },
+      },
+    ]),
+  );
+}
+
+export function cuerpoJson<T extends z.ZodType>(schema: T) {
+  return { content: { 'application/json': { schema } } };
+}
+
 export function buildOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: '3.1.0',
