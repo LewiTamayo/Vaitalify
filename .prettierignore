@@ -1,0 +1,7 @@
+node_modules
+coverage
+reports
+src/generated
+prisma/migrations
+.superpowers
+.claude
