@@ -5,6 +5,9 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     setupFiles: ['tests/setup-env.ts'],
     globalSetup: ['tests/global-setup.ts'],
+    // Los tests de integración hacen varias peticiones contra PostgreSQL remoto (Neon).
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
     // Reporte de ejecución en el formato genérico que lee SonarQube
     reporters: ['default', ['vitest-sonar-reporter', { outputFile: 'reports/sonar-report.xml' }]],
     coverage: {
