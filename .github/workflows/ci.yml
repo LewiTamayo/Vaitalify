@@ -26,6 +26,8 @@ jobs:
       DATABASE_URL: postgresql://vitalify:vitalify@localhost:5432/vitalify_test
       DIRECT_URL: postgresql://vitalify:vitalify@localhost:5432/vitalify_test
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:

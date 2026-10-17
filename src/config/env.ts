@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { z } from 'zod';
 
 const ENTORNOS_PUBLICOS = new Set(['preview', 'production']);
-const SECRETOS_EJEMPLO = /^cambia-esto/;
+const PREFIJO_SECRETO_EJEMPLO = 'cambia-esto';
 
 const opcional = z.string().min(1).optional();
 
@@ -53,7 +53,7 @@ function reglasCruzadas(entrada: Entrada): string[] {
   if (ENTORNOS_PUBLICOS.has(appEnv)) {
     for (const clave of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET']) {
       const valor = entrada[clave] ?? '';
-      if (valor.length < 32 || SECRETOS_EJEMPLO.test(valor)) {
+      if (valor.length < 32 || valor.startsWith(PREFIJO_SECRETO_EJEMPLO)) {
         errores.push(
           `${clave} (debe tener al menos 32 caracteres aleatorios en preview/production)`,
         );
