@@ -59,3 +59,18 @@ Las desviaciones respecto al modelo ER del Entregable 2 (S-01 … S-17) están e
 | Al cambiar la contraseña, las sesiones se cierran **antes** de guardar el nuevo hash. | Si el cierre falla, la contraseña no cambia; nunca queda una contraseña nueva con sesiones viejas vivas. |
 | `PATCH /usuarios/me` con `contrasena` se limita como el login: 5/min por usuario. | Un access token robado no sirve para adivinar `contrasenaActual` por fuerza bruta. |
 | Si Upstash no responde: el límite global deja pasar el tráfico (y lo registra); los límites de autenticación responden 503. | Una caída de Upstash no tumba toda la API, pero tampoco abre la puerta a la fuerza bruta. |
+
+## Fase 3 — Perfil y horario
+
+| Decisión | Justificación |
+|---|---|
+| `PUT /perfil` sin perfil previo → 404 (no crea). | Mantiene la semántica de §6.3: `POST` crea y `PUT` reemplaza. |
+| `PATCH` (perfil y bloques) valida las reglas sobre el resultado combinado con lo guardado. | Un cambio de un solo campo puede romper una regla entre campos (p. ej., dejar `horaFin` antes de `horaInicio`). |
+| `horaDormir` debe ser distinta de `horaDespertar`. | Con horas iguales no hay intervalo de sueño ni día despierto (S-12). |
+| Los `:id` se limitan al rango de `INT` de PostgreSQL (1…2 147 483 647); fuera de rango → 400. | Un id mayor provocaría un error de la BD (500). |
+| Un bloque que termina a medianoche se registra hasta `23:59`. | `24:00` no es una hora válida y los bloques no cruzan medianoche (S-11). |
+| El orden de horas se compara como texto `HH:mm`. | Con ceros a la izquierda el orden de texto coincide con el horario y no falla aunque el formato sea inválido. |
+| `pageSize > 100` → 400 en lugar de recortarlo. | El cliente sabe que pidió algo inválido (§5: máx. 100). |
+| Importación: una sola sentencia `INSERT` (`createManyAndReturn`) y validación previa de todo el lote. | Todo o nada (§6.4). El error indica la posición: `bloques.149.horaFin`. |
+| El parser JSON de 1 MB aplica solo a `POST /bloques/importar`; el resto mantiene 100 kB. | §9. |
+| El recálculo de micro-ventanas tras modificar bloques se añade en la Fase 4. | Depende del algoritmo de ventanas (RF-04). |
