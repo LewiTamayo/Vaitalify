@@ -9,3 +9,5 @@ reports/
 .claude/settings.local.json
 tests/performance/data/usuarios.csv
 tests/performance/resultados/
+.superpowers/
+src/generated/
