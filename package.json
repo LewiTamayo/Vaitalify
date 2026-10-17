@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "tsx watch src/local.ts",
     "build": "prisma generate && tsc --noEmit",
-    "vercel-build": "prisma generate && prisma migrate deploy",
+    "vercel-build": "prisma generate && tsx prisma/verificar-migracion.ts && prisma migrate deploy",
     "postinstall": "prisma generate",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
