@@ -1,4 +1,4 @@
-import { Prisma } from '../../common/db/prisma.js';
+import { esNoEncontrado, esUnicoViolado } from '../../common/db/errores-prisma.js';
 import { errores } from '../../common/errors/app-error.js';
 import { hashContrasena, verificarContrasena } from '../../common/security/passwords.js';
 import type { Rol } from '../../common/security/tokens.js';
@@ -11,14 +11,6 @@ import type { ActualizarUsuario, UsuarioDto } from './usuarios.schemas.js';
 const correoDuplicado = () => errores.conflicto('Ya existe una cuenta con ese correo');
 // Un access token sigue siendo válido hasta 15 min después de eliminar la cuenta: se responde 401.
 const cuentaInexistente = () => errores.noAutenticado('La cuenta ya no existe');
-
-function esUnicoViolado(error: unknown): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
-}
-
-function esNoEncontrado(error: unknown): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025';
-}
 
 export async function crearConDefaults(datos: repo.NuevoUsuario): Promise<UsuarioDto> {
   try {

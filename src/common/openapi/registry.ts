@@ -58,6 +58,17 @@ export function cuerpoJson<T extends z.ZodType>(schema: T) {
   return { content: { 'application/json': { schema } } };
 }
 
+export function esquemaPaginado<T extends z.ZodType>(item: T) {
+  return z.object({
+    data: z.array(item),
+    meta: z.object({
+      page: z.number().int(),
+      pageSize: z.number().int(),
+      total: z.number().int(),
+    }),
+  });
+}
+
 export function buildOpenApiDocument() {
   return new OpenApiGeneratorV31(registry.definitions).generateDocument({
     openapi: '3.1.0',
