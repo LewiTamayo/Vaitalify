@@ -11,6 +11,7 @@ import { REGLAS, fabricaPorDefecto, type FabricaLimitador } from './common/ratel
 import { env } from './config/env.js';
 import { crearAuthRouter } from './modules/auth/auth.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { bloquesRouter } from './modules/bloques/bloques.routes.js';
 import { perfilRouter } from './modules/perfil/perfil.routes.js';
 import { crearUsuariosRouter } from './modules/usuarios/usuarios.routes.js';
 
@@ -39,6 +40,7 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   apiRouter.use(crearAuthRouter(fabrica));
   apiRouter.use(crearUsuariosRouter(fabrica));
   apiRouter.use(perfilRouter);
+  apiRouter.use(bloquesRouter);
 
   app.get('/', (_req, res) => {
     res.redirect(302, '/api/v1/docs');
