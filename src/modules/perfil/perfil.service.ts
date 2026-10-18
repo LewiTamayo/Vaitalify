@@ -1,6 +1,7 @@
 import { esNoEncontrado, esUnicoViolado } from '../../common/db/errores-prisma.js';
 import { errores } from '../../common/errors/app-error.js';
 import { formatHHmm } from '../../common/utils/time.js';
+import { recalcularSemanaSinFallar } from '../micro-ventanas/micro-ventanas.service.js';
 import * as repo from './perfil.repository.js';
 import {
   validarPerfilCompleto,
@@ -33,7 +34,10 @@ export async function obtener(idUsuario: number): Promise<PerfilDto> {
 
 export async function crear(idUsuario: number, datos: DatosPerfil): Promise<PerfilDto> {
   try {
-    return aDto(await repo.crear(idUsuario, datos));
+    const perfil = aDto(await repo.crear(idUsuario, datos));
+    // El día despierto define las micro-ventanas: se recalculan al cambiar el perfil.
+    await recalcularSemanaSinFallar(idUsuario);
+    return perfil;
   } catch (error) {
     if (esUnicoViolado(error)) throw errores.conflicto('Ya tienes un perfil; usa PUT o PATCH');
     throw error;
@@ -42,7 +46,9 @@ export async function crear(idUsuario: number, datos: DatosPerfil): Promise<Perf
 
 export async function reemplazar(idUsuario: number, datos: DatosPerfil): Promise<PerfilDto> {
   try {
-    return aDto(await repo.actualizar(idUsuario, datos));
+    const perfil = aDto(await repo.actualizar(idUsuario, datos));
+    await recalcularSemanaSinFallar(idUsuario);
+    return perfil;
   } catch (error) {
     if (esNoEncontrado(error)) throw sinPerfil();
     throw error;

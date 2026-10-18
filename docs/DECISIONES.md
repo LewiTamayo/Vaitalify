@@ -74,3 +74,18 @@ Las desviaciones respecto al modelo ER del Entregable 2 (S-01 … S-17) están e
 | Importación: una sola sentencia `INSERT` (`createManyAndReturn`) y validación previa de todo el lote. | Todo o nada (§6.4). El error indica la posición: `bloques.149.horaFin`. |
 | El parser JSON de 1 MB aplica solo a `POST /bloques/importar`; el resto mantiene 100 kB. | §9. |
 | El recálculo de micro-ventanas tras modificar bloques se añade en la Fase 4. | Depende del algoritmo de ventanas (RF-04). |
+
+## Fase 4 — Núcleo adaptativo
+
+| Decisión | Justificación |
+|---|---|
+| Las micro-ventanas se recalculan (hoy … hoy+6) en la misma petición tras crear, importar, reemplazar, actualizar o eliminar un bloque, y tras crear o cambiar el perfil. | RNF-03 y §7.7.3. El día despierto del perfil también define las ventanas. Sin perfil, el recálculo automático se omite (no falla la operación sobre bloques). |
+| Reconciliación por clave `fecha + horaInicio`: las ventanas con pausa `hecha`/`omitida` se conservan siempre; una `pendiente` se conserva si su ventana sigue existiendo y la actividad cabe en la nueva duración; las demás se eliminan y se crean las nuevas. | §7.1 paso 5: no se pierde el historial y no quedan pausas en huecos que ya no existen. |
+| Si `horaDormir` es anterior o igual a `horaDespertar` (se duerme después de medianoche), el día despierto termina a las 24:00. | Simplificación del MVP coherente con S-11. |
+| `micro-ventanas.repository` lee perfil y bloques con sus propias consultas (solo lectura). | Evita un ciclo de imports: los servicios de bloques y perfil llaman al de micro-ventanas. |
+| El desempate de la recomendación usa un PRNG con semilla (mulberry32) iniciado con `crypto.randomInt`. | §7.2: tests deterministas sin `Math.random`. No se usa con fines de seguridad (hotspot de Sonar revisado como seguro). |
+| Marcar `hecha` una micro-pausa de un día futuro → 422. | U-7: la racha cuenta el día de la ventana. |
+| `PATCH /micro-pausas/:id` responde con la micro-pausa; los campos de gamificación se añaden en la Fase 6. | La gamificación (§7.4) es de la Fase 6. |
+| Idempotencia: `Idempotency-Key` (1–64 caracteres `[A-Za-z0-9_-]`) por usuario; se guardan solo respuestas 2xx durante 24 h, **antes** de enviarlas. La misma clave en otra ruta → 422. | RNF-09. Vercel puede congelar la función tras responder, así que guardar después no sería fiable. Un 4xx no se guarda para que el cliente pueda corregir y reintentar. |
+| El seed del catálogo (8 actividades y 3 insignias) es idempotente y se ejecuta en cada `vercel-build` (`prisma db seed`). Los usuarios admin/demo solo se crean si existen `SEED_ADMIN_PASSWORD`/`SEED_DEMO_PASSWORD`. | No hace falta ningún paso manual tras desplegar (cada Preview tiene su catálogo). |
+| Borrar una actividad con micro-pausas → 409 (restricción de clave foránea). | §6.7. |
