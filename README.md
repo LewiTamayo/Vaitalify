@@ -41,30 +41,37 @@ y ejecuta `npm run db:migrate:test` antes de la primera corrida.
   `vercel-build` ejecuta `prisma generate && prisma migrate deploy`.
 - **SonarQube Cloud**: el job `ci` de GitHub Actions analiza cada PR y espera el Quality Gate (secreto `SONAR_TOKEN`).
 
+## Front de demostración
+
+En [web/](web/README.md) hay un front mínimo en React + Vite para mostrar la API funcionando:
+entrar o crear cuenta, pantalla **Hoy** (micro-pausas) y **Progreso**. En local:
+`npm --prefix web install && npm --prefix web run dev` → http://localhost:5173 (con la API en el puerto 3000).
+Se despliega como un segundo proyecto de Vercel con Root Directory `web`.
+
 ## Endpoints disponibles
 
-| Ruta | Descripción |
-|---|---|
-| `GET /api/v1/health` | Estado de la API y de la base de datos |
-| `GET /api/v1/docs` | Swagger UI |
-| `GET /api/v1/openapi.json` | Especificación OpenAPI 3.1 |
-| `POST /api/v1/auth/registro` | Crea una cuenta (`aceptaDatos` debe ser `true`) |
-| `POST /api/v1/auth/login` | Inicia sesión → `accessToken` (15 min) + `refreshToken` (7 días) |
-| `POST /api/v1/auth/refresh` | Rota el refresh token |
-| `POST /api/v1/auth/logout` | Revoca el refresh token |
-| `GET/PATCH/DELETE /api/v1/usuarios/me` | Cuenta propia (consultar, editar, eliminar con todos sus datos) |
-| `GET /api/v1/usuarios/me/exportar` | Descarga todos los datos propios en JSON |
-| `POST/GET/PUT/PATCH/DELETE /api/v1/perfil` | Perfil de hábitos (uno por usuario) |
-| `POST/GET /api/v1/bloques` | Crear y listar bloques de horario (`?tipo`, `?diaSemana`, `?page`, `?pageSize`) |
-| `GET/PUT/PATCH/DELETE /api/v1/bloques/:id` | Un bloque propio (los ajenos responden 404) |
-| `POST /api/v1/bloques/importar` | Importa hasta 200 bloques de una vez (todos o ninguno) |
-| `GET /api/v1/actividades`, `GET /api/v1/actividades/:id` | Catálogo de actividades (`?categoria`, `?maxDuracionMin`); escritura solo `admin` |
-| `POST /api/v1/micro-ventanas/recalcular` | Recalcula las micro-ventanas (se hace solo al cambiar bloques o perfil) |
-| `GET /api/v1/micro-ventanas`, `GET/DELETE /api/v1/micro-ventanas/:id` | Micro-ventanas libres (`?desde`, `?hasta`, `?conPausa`) |
-| `POST /api/v1/micro-ventanas/:id/micro-pausa` | Recomienda una micro-pausa para la ventana |
-| `GET /api/v1/micro-pausas`, `GET /api/v1/micro-pausas/hoy` | Micro-pausas (todas o las de hoy) |
-| `PATCH /api/v1/micro-pausas/:id` | Registra el cumplimiento (`{ "estado": "hecha" }`); admite `Idempotency-Key` |
-| `PUT/DELETE /api/v1/micro-pausas/:id` | Cambia la actividad (si está pendiente) o elimina |
+| Ruta                                                                  | Descripción                                                                       |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `GET /api/v1/health`                                                  | Estado de la API y de la base de datos                                            |
+| `GET /api/v1/docs`                                                    | Swagger UI                                                                        |
+| `GET /api/v1/openapi.json`                                            | Especificación OpenAPI 3.1                                                        |
+| `POST /api/v1/auth/registro`                                          | Crea una cuenta (`aceptaDatos` debe ser `true`)                                   |
+| `POST /api/v1/auth/login`                                             | Inicia sesión → `accessToken` (15 min) + `refreshToken` (7 días)                  |
+| `POST /api/v1/auth/refresh`                                           | Rota el refresh token                                                             |
+| `POST /api/v1/auth/logout`                                            | Revoca el refresh token                                                           |
+| `GET/PATCH/DELETE /api/v1/usuarios/me`                                | Cuenta propia (consultar, editar, eliminar con todos sus datos)                   |
+| `GET /api/v1/usuarios/me/exportar`                                    | Descarga todos los datos propios en JSON                                          |
+| `POST/GET/PUT/PATCH/DELETE /api/v1/perfil`                            | Perfil de hábitos (uno por usuario)                                               |
+| `POST/GET /api/v1/bloques`                                            | Crear y listar bloques de horario (`?tipo`, `?diaSemana`, `?page`, `?pageSize`)   |
+| `GET/PUT/PATCH/DELETE /api/v1/bloques/:id`                            | Un bloque propio (los ajenos responden 404)                                       |
+| `POST /api/v1/bloques/importar`                                       | Importa hasta 200 bloques de una vez (todos o ninguno)                            |
+| `GET /api/v1/actividades`, `GET /api/v1/actividades/:id`              | Catálogo de actividades (`?categoria`, `?maxDuracionMin`); escritura solo `admin` |
+| `POST /api/v1/micro-ventanas/recalcular`                              | Recalcula las micro-ventanas (se hace solo al cambiar bloques o perfil)           |
+| `GET /api/v1/micro-ventanas`, `GET/DELETE /api/v1/micro-ventanas/:id` | Micro-ventanas libres (`?desde`, `?hasta`, `?conPausa`)                           |
+| `POST /api/v1/micro-ventanas/:id/micro-pausa`                         | Recomienda una micro-pausa para la ventana                                        |
+| `GET /api/v1/micro-pausas`, `GET /api/v1/micro-pausas/hoy`            | Micro-pausas (todas o las de hoy)                                                 |
+| `PATCH /api/v1/micro-pausas/:id`                                      | Registra el cumplimiento (`{ "estado": "hecha" }`); admite `Idempotency-Key`      |
+| `PUT/DELETE /api/v1/micro-pausas/:id`                                 | Cambia la actividad (si está pendiente) o elimina                                 |
 
 | `POST/GET /api/v1/registros-sueno`, `GET/PUT/DELETE /api/v1/registros-sueno/:id` | Horas dormidas por fecha (admite `Idempotency-Key`) |
 | `GET /api/v1/sueno/recomendacion?fecha=` | Hora sugerida para acostarse y checklist "Antes de dormir" |
