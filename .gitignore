@@ -7,8 +7,9 @@ reports/
 !.env.example
 .vercel/
 .claude/settings.local.json
+# Contiene la contraseña de los usuarios perf: nunca se versiona.
 tests/performance/data/usuarios.csv
-tests/performance/resultados/
+# Los resultados de JMeter se versionan como evidencia del informe; .jtl/.log y reportes HTML.
 .superpowers/
 src/generated/
 jmeter.log
