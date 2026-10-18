@@ -106,3 +106,17 @@ Las desviaciones respecto al modelo ER del Entregable 2 (S-01 … S-17) están e
 | El job diario procesa usuarios con perfil por lotes de 100 (cursor por id); el fallo de un usuario no detiene el resto. | §7.7.1. |
 | `NotificationSender` + `LogSender` como punto de extensión; ningún flujo envía push desde el servidor. | S-13 y S-15: la app programa notificaciones locales con `/recordatorios/pendientes`. |
 | El repositorio de recordatorios lee micro-pausas y configuración con sus propias consultas (solo lectura). | Esos servicios regeneran recordatorios: usarlos crearía un ciclo de imports. |
+
+## Fase 6 — Gamificación y progreso
+
+| Decisión | Justificación |
+|---|---|
+| **Libro de puntos** (`puntos_otorgados`, único por usuario + concepto + referencia): +10 la primera vez que una micro-pausa pasa a `hecha`; +5 la primera vez que una fecha cumple la meta de sueño. | Alternar `hecha → pendiente → hecha` o borrar y recrear un registro no cobra dos veces; borrar no revierte (S-09). Es idempotente aunque lleguen reintentos o peticiones simultáneas. |
+| La racha se **recalcula** sobre todos los días activos (fecha de la ventana) con la regla de §7.4; `Progreso` guarda el resultado como caché. | U-7: una sincronización tardía o desordenada da la misma racha que en orden. |
+| Comodines: 2 por semana ISO, con reinicio perezoso según la semana del **nuevo** día activo. | §7.4 paso 2 y S-08. |
+| Racha **vigente** al consultar: si los días perdidos desde la última actividad superan los comodines disponibles hoy, se muestra 0 (sin consumir comodines). | Un usuario inactivo no ve una racha vieja como actual; la regla de §7.4 solo se aplica al registrar actividad. |
+| Puntos, racha e insignias se aplican en **una transacción con bloqueo por usuario**. | §7.4 ("toda operación de gamificación en una transacción") y sin carreras entre PATCH simultáneos. |
+| `PATCH /micro-pausas/:id` responde la micro-pausa + `puntosGanados`, `rachaActual` (vigente) e `insigniasNuevas`. Si la gamificación falla, el error se propaga (un reintento es seguro: el libro es idempotente). | §6.6. |
+| La gamificación del sueño no hace fallar el registro. | El registro ya se guardó y un reintento respondería 409. |
+| Insignias por **estrategia según `codigo`** (`PRIMERA_SEMANA`, `DIEZ_PAUSAS`, `SUENO_7H_5N`); idempotentes por la PK compuesta. `DIEZ_PAUSAS` cuenta las pausas puntuadas del libro (no se pierde al borrar). Las insignias creadas por el admin sin estrategia no se otorgan solas. | §7.6 y S-05. |
+| `/progreso/semanal`: el promedio de sueño usa solo los días con registro (`null` si no hay); `porcentajeMeta` es `null` sin meta de actividad. | §7.5. |

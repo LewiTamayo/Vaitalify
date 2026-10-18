@@ -72,6 +72,9 @@ y ejecuta `npm run db:migrate:test` antes de la primera corrida.
 | `POST /api/v1/recordatorios/generar` | Genera (idempotente) los recordatorios de un día |
 | `GET /api/v1/recordatorios`, `GET /api/v1/recordatorios/pendientes?horas=24` | Recordatorios; los pendientes son los que la app programa como notificaciones locales |
 | `GET/PATCH/DELETE /api/v1/recordatorios/:id` | Detalle, edición o acuse `{ "enviado": true }` |
+| `GET /api/v1/progreso` | Puntos, racha vigente, racha máxima y comodines |
+| `GET /api/v1/progreso/semanal?semana=` | Resumen semanal: sueño, actividad, racha e insignias |
+| `GET /api/v1/insignias`, `GET /api/v1/usuarios/me/insignias` | Catálogo de insignias (con las obtenidas) e insignias propias; escritura solo `admin` |
 | `GET /api/v1/jobs/generar-recordatorios`, `GET /api/v1/jobs/limpieza` | Solo Vercel Cron (`Authorization: Bearer <CRON_SECRET>`) |
 
 ### Recordatorios y notificaciones
