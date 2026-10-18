@@ -12,6 +12,7 @@ import { env } from './config/env.js';
 import { actividadesRouter } from './modules/actividades/actividades.routes.js';
 import { configNotificacionesRouter } from './modules/config-notificaciones/config-notificaciones.routes.js';
 import { crearAuthRouter } from './modules/auth/auth.routes.js';
+import { jobsRouter } from './modules/jobs/jobs.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { RUTA_IMPORTAR, bloquesRouter } from './modules/bloques/bloques.routes.js';
 import { microPausasRouter } from './modules/micro-pausas/micro-pausas.routes.js';
@@ -51,6 +52,8 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   const apiRouter = Router();
   apiRouter.use(healthRouter);
   apiRouter.use(docsRouter);
+  // Vercel Cron: protegido por CRON_SECRET y fuera del límite global.
+  apiRouter.use(jobsRouter);
   apiRouter.use(rateLimit(fabrica(REGLAS.global), claveUsuarioOIp, { siFalla: 'permitir' }));
   apiRouter.use(crearAuthRouter(fabrica));
   apiRouter.use(crearUsuariosRouter(fabrica));
