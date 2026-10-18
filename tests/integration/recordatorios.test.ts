@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
-import { hoyEnZona, isoWeekday, sumarDias } from '../../src/common/utils/dates.js';
+import { diaLogico, hoyEnZona, isoWeekday, sumarDias } from '../../src/common/utils/dates.js';
 import {
   bearer,
   crearAppTest,
@@ -13,6 +13,9 @@ const app = crearAppTest();
 afterAll(limpiarUsuariosDeTest);
 
 const HOY = hoyEnZona();
+// Los recordatorios se generan para el día lógico (corte a las 04:00, §17): entre las 00:00 y las
+// 04:00 todavía es "ayer". Usar hoyEnZona() aquí hacía fallar estos tests de madrugada.
+const DIA = diaLogico();
 
 interface Recordatorio {
   idRecordatorio: number;
@@ -44,9 +47,9 @@ async function conPerfil(): Promise<SesionTest> {
   return s;
 }
 
-const deHoy = async (s: SesionTest, tipo?: string) => {
+const deHoy = async (s: SesionTest, tipo?: string, fecha = DIA) => {
   const filtroTipo = tipo ? `&tipo=${tipo}` : '';
-  const res = await leer(s, `/recordatorios?desde=${HOY}&hasta=${HOY}${filtroTipo}`);
+  const res = await leer(s, `/recordatorios?desde=${fecha}&hasta=${fecha}${filtroTipo}`);
   return res.body.data as Recordatorio[];
 };
 
@@ -54,7 +57,7 @@ describe('POST /recordatorios/generar', () => {
   it('es idempotente: crear el perfil ya generó los 2 de sueño; generar de nuevo no duplica', async () => {
     const s = await conPerfil();
     expect(await deHoy(s, 'sueno')).toHaveLength(2);
-    const res = await enviar(s, 'post', '/recordatorios/generar', { fecha: HOY });
+    const res = await enviar(s, 'post', '/recordatorios/generar', { fecha: DIA });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ generados: 0, eliminados: 0, conservados: 2 });
     expect(await deHoy(s)).toHaveLength(2);
@@ -93,7 +96,8 @@ describe('configuración y regeneración automática', () => {
       horaInicio: string;
     }[];
     await enviar(s, 'post', `/micro-ventanas/${ventanas[0]!.idVentana}/micro-pausa`, {});
-    const pausas = await deHoy(s, 'pausa');
+    // El recordatorio de una pausa va en la fecha de su ventana (calendario), no en el día lógico.
+    const pausas = await deHoy(s, 'pausa', HOY);
     expect(pausas).toHaveLength(1);
     expect(pausas[0]!.mensaje).toMatch(/^En 5 minutos: /);
   });
@@ -102,7 +106,7 @@ describe('configuración y regeneración automática', () => {
 describe('casos límite de la generación', () => {
   it('día que empieza por la tarde: generar el día siguiente no borra los recordatorios de sueño de hoy', async () => {
     const s = await conPerfil();
-    const manana = sumarDias(HOY, 1);
+    const manana = sumarDias(DIA, 1);
     await enviar(s, 'post', '/bloques', {
       tipo: 'trabajo',
       titulo: 'Turno de tarde',
@@ -123,7 +127,7 @@ describe('casos límite de la generación', () => {
       fechaHoraEnvio: nuevaHora,
     });
     expect(editado.status).toBe(200);
-    await enviar(s, 'post', '/recordatorios/generar', { fecha: HOY });
+    await enviar(s, 'post', '/recordatorios/generar', { fecha: DIA });
     const despues = await deHoy(s, 'sueno');
     expect(despues).toHaveLength(2);
     expect(despues.find((x) => x.idRecordatorio === r!.idRecordatorio)?.fechaHoraEnvio).toBe(

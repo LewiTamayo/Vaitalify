@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
 import { prisma } from '../../src/common/db/prisma.js';
-import { hoyEnZona } from '../../src/common/utils/dates.js';
+import { diaLogico } from '../../src/common/utils/dates.js';
 import { bearer, crearAppTest, limpiarUsuariosDeTest, registrar } from './helpers.js';
 
 const app = crearAppTest();
@@ -86,7 +86,7 @@ describe('/jobs (Vercel Cron)', () => {
     await llamar();
 
     const recordatorios = await request(app)
-      .get(`/api/v1/recordatorios?desde=${hoyEnZona()}&hasta=${hoyEnZona()}&tipo=sueno`)
+      .get(`/api/v1/recordatorios?desde=${diaLogico()}&hasta=${diaLogico()}&tipo=sueno`)
       .set(...bearer(s));
     expect(recordatorios.body.meta.total).toBe(2);
   });
