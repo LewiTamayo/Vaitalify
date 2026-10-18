@@ -15,6 +15,7 @@ import * as controller from './micro-pausas.controller.js';
 import {
   CambiarActividadSchema,
   CambiarEstadoSchema,
+  MicroPausaConProgresoSchema,
   FiltrosPausasSchema,
   IdVentanaParamSchema,
   MicroPausaSchema,
@@ -63,13 +64,17 @@ registry.registerPath({
 registry.registerPath({
   ...conId,
   method: 'patch',
-  summary: 'Registra el cumplimiento: pendiente, hecha u omitida (admite Idempotency-Key)',
+  summary:
+    'Registra el cumplimiento (pendiente, hecha u omitida); devuelve puntos, racha e insignias nuevas',
   request: {
     ...conId.request,
     headers: cabeceraIdempotencia,
     body: cuerpoJson(CambiarEstadoSchema),
   },
-  responses: { 200: respuesta('Micro-pausa'), ...respuestasError(400, 401, 404, 422) },
+  responses: {
+    200: { description: 'Micro-pausa y progreso', ...cuerpoJson(MicroPausaConProgresoSchema) },
+    ...respuestasError(400, 401, 404, 422),
+  },
 });
 registry.registerPath({
   ...conId,

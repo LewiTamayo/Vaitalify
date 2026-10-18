@@ -6,9 +6,15 @@ import { crearRng, type Rng } from '../../common/utils/random.js';
 import { formatHHmm } from '../../common/utils/time.js';
 import * as actividades from '../actividades/actividades.service.js';
 import * as ventanas from '../micro-ventanas/micro-ventanas.service.js';
+import * as gamificacion from '../progreso/gamificacion.service.js';
 import { regenerarSinFallar } from '../recordatorios/recordatorios.service.js';
 import * as repo from './micro-pausas.repository.js';
-import type { Estado, FiltrosPausas, MicroPausaDto } from './micro-pausas.schemas.js';
+import type {
+  Estado,
+  FiltrosPausas,
+  MicroPausaConProgresoDto,
+  MicroPausaDto,
+} from './micro-pausas.schemas.js';
 import { recomendarActividad } from './recomendacion.domain.js';
 
 const noEncontrada = () => errores.noEncontrado('La micro-pausa no existe');
@@ -123,7 +129,7 @@ export async function cambiarEstado(
   idUsuario: number,
   idPausa: number,
   estado: Estado,
-): Promise<MicroPausaDto> {
+): Promise<MicroPausaConProgresoDto> {
   const pausa = await obtenerFila(idUsuario, idPausa);
   if (estado === 'hecha' && formatFecha(pausa.ventana.fecha) > hoyEnZona()) {
     throw errores.reglaNegocio('No puedes marcar como hecha una micro-pausa de un día futuro');
@@ -135,7 +141,13 @@ export async function cambiarEstado(
   if (!actualizada) throw noEncontrada();
   // Una pausa hecha u omitida ya no necesita su recordatorio.
   await regenerarSinFallar(idUsuario, formatFecha(pausa.ventana.fecha));
-  return aDto(actualizada);
+  // §6.6: la respuesta incluye puntos ganados, racha e insignias nuevas (§7.4).
+  const progreso = await gamificacion.trasCambioDePausa(
+    idUsuario,
+    { fecha: formatFecha(pausa.ventana.fecha), horaInicio: formatHHmm(pausa.ventana.horaInicio) },
+    estado,
+  );
+  return { ...aDto(actualizada), ...progreso };
 }
 
 export async function cambiarActividad(
@@ -161,4 +173,5 @@ export async function eliminar(idUsuario: number, idPausa: number): Promise<void
   const pausa = await obtenerFila(idUsuario, idPausa);
   if (!(await repo.eliminar(idUsuario, idPausa))) throw noEncontrada();
   await regenerarSinFallar(idUsuario, formatFecha(pausa.ventana.fecha));
+  if (pausa.estado === 'hecha') await gamificacion.recalcularSinFallar(idUsuario);
 }

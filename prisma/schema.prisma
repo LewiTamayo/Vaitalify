@@ -51,15 +51,16 @@ model Usuario {
   aceptaDatos    Boolean  @map("acepta_datos") // Ley 1581/2012
   rol            Rol      @default(user) // +
 
-  perfil         PerfilHabitos?
-  bloques        BloqueHorario[]
-  microVentanas  MicroVentana[]
-  registrosSueno RegistroSueno[]
-  recordatorios  Recordatorio[]
-  configs        ConfigNotificacion[]
-  progreso       Progreso?
-  insignias      UsuarioInsignia[]
-  refreshTokens  RefreshToken[] // +
+  perfil          PerfilHabitos?
+  bloques         BloqueHorario[]
+  microVentanas   MicroVentana[]
+  registrosSueno  RegistroSueno[]
+  recordatorios   Recordatorio[]
+  configs         ConfigNotificacion[]
+  progreso        Progreso?
+  insignias       UsuarioInsignia[]
+  refreshTokens   RefreshToken[] // +
+  puntosOtorgados PuntosOtorgados[] // + libro de puntos
 
   @@map("usuario")
 }
@@ -191,6 +192,21 @@ model Progreso {
   usuario           Usuario   @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
 
   @@map("progreso")
+}
+
+// + Libro de puntos: cada otorgamiento queda registrado una sola vez por (usuario, concepto,
+// referencia). Evita cobrar dos veces al alternar estados o al borrar y recrear (S-09: no se revierte).
+model PuntosOtorgados {
+  idPunto    Int      @id @default(autoincrement()) @map("id_punto")
+  idUsuario  Int      @map("id_usuario")
+  concepto   String   @db.VarChar(20) // pausa | sueno
+  referencia String   @db.VarChar(40) // pausa: fecha|horaInicio de la ventana; sueño: fecha
+  puntos     Int      @db.SmallInt
+  creadoEn   DateTime @default(now()) @map("creado_en")
+  usuario    Usuario  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+
+  @@unique([idUsuario, concepto, referencia])
+  @@map("puntos_otorgados")
 }
 
 model IdempotencyKey {

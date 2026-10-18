@@ -43,6 +43,17 @@ export const MicroPausaSchema = registry.register(
   }),
 );
 
+// Respuesta del PATCH de estado (§6.6): la micro-pausa más el efecto en la gamificación.
+export const MicroPausaConProgresoSchema = registry.register(
+  'MicroPausaConProgreso',
+  MicroPausaSchema.extend({
+    puntosGanados: z.number().int().openapi({ example: 10 }),
+    rachaActual: z.number().int().openapi({ example: 4 }),
+    insigniasNuevas: z.array(z.object({ codigo: z.string(), nombre: z.string() })),
+  }),
+);
+
 export type Estado = z.infer<typeof EstadoSchema>;
+export type MicroPausaConProgresoDto = z.infer<typeof MicroPausaConProgresoSchema>;
 export type FiltrosPausas = z.infer<typeof FiltrosPausasSchema>;
 export type MicroPausaDto = z.infer<typeof MicroPausaSchema>;

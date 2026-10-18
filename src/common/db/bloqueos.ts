@@ -3,7 +3,7 @@ import { prisma, type Prisma } from './prisma.js';
 export type Tx = Prisma.TransactionClient;
 
 // Espacios de nombres de los advisory locks: pg_advisory_xact_lock(clase, idUsuario).
-const CLASES = { ventanas: 1, recordatorios: 2 } as const;
+const CLASES = { ventanas: 1, recordatorios: 2, progreso: 3 } as const;
 
 // Serializa por usuario operaciones que leen y reescriben datos derivados. El bloqueo vive lo que
 // dura la transacción, así que funciona con el pooler de Neon (modo transacción) y entre
@@ -29,3 +29,7 @@ export const conBloqueoVentanas = <T>(idUsuario: number, fn: (tx: Tx) => Promise
 // Generación de recordatorios.
 export const conBloqueoRecordatorios = <T>(idUsuario: number, fn: (tx: Tx) => Promise<T>) =>
   conBloqueo('recordatorios', idUsuario, fn);
+
+// Puntos, racha e insignias (§7.4: toda operación de gamificación en una transacción).
+export const conBloqueoProgreso = <T>(idUsuario: number, fn: (tx: Tx) => Promise<T>) =>
+  conBloqueo('progreso', idUsuario, fn);

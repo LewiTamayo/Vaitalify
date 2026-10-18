@@ -2,6 +2,7 @@ import { esUnicoViolado } from '../../common/db/errores-prisma.js';
 import { errores } from '../../common/errors/app-error.js';
 import { formatFecha, hoyEnZona } from '../../common/utils/dates.js';
 import { pagina, type Pagina } from '../../common/utils/pagination.js';
+import { trasRegistroDeSuenoSinFallar } from '../progreso/gamificacion.service.js';
 import * as repo from './registros-sueno.repository.js';
 import type {
   DatosRegistro,
@@ -38,7 +39,9 @@ async function conDuplicado<T>(operacion: () => Promise<T>): Promise<T> {
 
 export async function crear(idUsuario: number, datos: DatosRegistro): Promise<RegistroSuenoDto> {
   validarFecha(datos);
-  return aDto(await conDuplicado(() => repo.crear(idUsuario, datos)));
+  const registro = aDto(await conDuplicado(() => repo.crear(idUsuario, datos)));
+  await trasRegistroDeSuenoSinFallar(idUsuario, registro.fecha, registro.horasDormidas);
+  return registro;
 }
 
 export async function listar(
@@ -63,7 +66,9 @@ export async function reemplazar(
   validarFecha(datos);
   const registro = await conDuplicado(() => repo.reemplazar(idUsuario, idRegistro, datos));
   if (!registro) throw noEncontrado();
-  return aDto(registro);
+  const dto = aDto(registro);
+  await trasRegistroDeSuenoSinFallar(idUsuario, dto.fecha, dto.horasDormidas);
+  return dto;
 }
 
 export async function eliminar(idUsuario: number, idRegistro: number): Promise<void> {
