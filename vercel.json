@@ -1,3 +1,7 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/api/v1/jobs/generar-recordatorios", "schedule": "0 9 * * *" },
+    { "path": "/api/v1/jobs/limpieza", "schedule": "30 8 * * *" }
+  ]
 }

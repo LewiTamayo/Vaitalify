@@ -155,9 +155,13 @@ model Recordatorio {
   tipo           TipoRecordatorio
   mensaje        String           @db.VarChar(160)
   fechaHoraEnvio DateTime         @map("fecha_hora_envio")
+  fecha          DateTime         @db.Date // + día lógico al que pertenece (la noche de "fecha")
+  claveOrigen    String           @map("clave_origen") @db.VarChar(60) // + tipo|instante generado
   enviado        Boolean          @default(false)
   usuario        Usuario          @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
 
+  @@unique([idUsuario, claveOrigen]) // + clave natural: generación idempotente (§7.7)
+  @@index([idUsuario, fecha])
   @@index([enviado, fechaHoraEnvio])
   @@map("recordatorio")
 }

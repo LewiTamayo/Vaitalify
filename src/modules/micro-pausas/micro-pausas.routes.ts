@@ -5,6 +5,7 @@ import { requireAuth } from '../../common/middleware/auth.js';
 import { idempotencia } from '../../common/middleware/idempotency.js';
 import { validate } from '../../common/middleware/validate.js';
 import {
+  cabeceraIdempotencia,
   cuerpoJson,
   esquemaPaginado,
   registry,
@@ -65,12 +66,7 @@ registry.registerPath({
   summary: 'Registra el cumplimiento: pendiente, hecha u omitida (admite Idempotency-Key)',
   request: {
     ...conId.request,
-    headers: z.object({
-      'Idempotency-Key': z
-        .string()
-        .optional()
-        .openapi({ description: 'Reintentos offline: misma clave → misma respuesta (24 h)' }),
-    }),
+    headers: cabeceraIdempotencia,
     body: cuerpoJson(CambiarEstadoSchema),
   },
   responses: { 200: respuesta('Micro-pausa'), ...respuestasError(400, 401, 404, 422) },

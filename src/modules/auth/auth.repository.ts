@@ -17,6 +17,13 @@ export async function revocarRefresh(idToken: number): Promise<boolean> {
   return count === 1;
 }
 
+// Para el job de limpieza: solo los vencidos. Un revocado aún vigente se conserva hasta su
+// vencimiento (máx. 7 días): si alguien lo reutiliza, se detecta y se cierran todas las sesiones.
+export async function borrarCaducados(ahora: Date): Promise<number> {
+  const { count } = await prisma.refreshToken.deleteMany({ where: { expiraEn: { lt: ahora } } });
+  return count;
+}
+
 export async function revocarTodos(idUsuario: number): Promise<void> {
   await prisma.refreshToken.updateMany({
     where: { idUsuario, revocado: false },

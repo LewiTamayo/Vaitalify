@@ -89,3 +89,20 @@ Las desviaciones respecto al modelo ER del Entregable 2 (S-01 … S-17) están e
 | Idempotencia: `Idempotency-Key` (1–64 caracteres `[A-Za-z0-9_-]`) por usuario; se guardan solo respuestas 2xx durante 24 h, **antes** de enviarlas. La misma clave en otra ruta → 422. | RNF-09. Vercel puede congelar la función tras responder, así que guardar después no sería fiable. Un 4xx no se guarda para que el cliente pueda corregir y reintentar. |
 | El seed del catálogo (8 actividades y 3 insignias) es idempotente y se ejecuta en cada `vercel-build` (`prisma db seed`). Los usuarios admin/demo solo se crean si existen `SEED_ADMIN_PASSWORD`/`SEED_DEMO_PASSWORD`. | No hace falta ningún paso manual tras desplegar (cada Preview tiene su catálogo). |
 | Borrar una actividad con micro-pausas → 409 (restricción de clave foránea). | §6.7. |
+
+## Fase 5 — Sueño y recordatorios
+
+| Decisión | Justificación |
+|---|---|
+| Hora para acostarse (§7.3): `despertar = primera actividad de D+1 − MARGEN_PREPARACION_MIN`; `acostarse = despertar − metaHorasSueno`. Sin bloques en D+1 se usan `horaDormir`/`horaDespertar` del perfil. `horasDeSuenoLogradas` se redondea a 1 decimal. | Reproduce el ejemplo del mockup (07:00 → 22:45) y no inventa una actividad si no la hay. |
+| Una hora "de la noche" anterior a las 12:00 (p. ej. acostarse 00:30) pertenece al día siguiente. | Los recordatorios de sueño nunca quedan en la madrugada del día anterior. |
+| Cada recordatorio guarda su **día lógico** (`fecha`, la noche de D aunque se envíe en la madrugada de D+1) y su **clave de origen** (`tipo|instante generado`). La regeneración sincroniza por día lógico y clave de origen; solo toca los **no enviados**. | Un día que empieza por la tarde (acostarse 05:45 de D+1) no pierde sus recordatorios con la generación de D+1, y una hora editada por el usuario no se deshace ni se duplica. El día lógico corta a las 04:00 locales (`diaLogico()`). |
+| Unicidad natural `(idUsuario, claveOrigen)` en `recordatorio` y generación bajo un *advisory lock* por usuario. | §7.7.1: el cron repetido o dos regeneraciones simultáneas no duplican ni dejan recordatorios obsoletos. |
+| Horario de silencio: el recordatorio se mueve al final del silencio solo si sigue antes de su límite (pausa → inicio de la ventana; sueño → hora de despertar); si no, se descarta. | §7.7.4: "se mueven al final del silencio o se descartan si ya no tienen sentido". |
+| Los recordatorios del día se regeneran en la misma petición tras cambios en bloques, perfil, micro-pausas o configuración, sin hacer fallar la operación (datos derivados). | §7.7.3. Mismo criterio que el recálculo de micro-ventanas. |
+| `GET /recordatorios/pendientes` filtra de nuevo por tipos activos. | La configuración pudo cambiar después de generar. |
+| Jobs: `cronAuth` compara los SHA-256 en tiempo constante; sin `CRON_SECRET` configurado responde 401 siempre. Los jobs quedan fuera del límite global. | §9. `timingSafeEqual` exige longitudes iguales: con hashes nunca lanza. |
+| La limpieza borra refresh tokens **vencidos**, no los revocados aún vigentes. | Borrar los revocados anularía la detección de reutilización (Fase 2): se conservan hasta su vencimiento (máx. 7 días). |
+| El job diario procesa usuarios con perfil por lotes de 100 (cursor por id); el fallo de un usuario no detiene el resto. | §7.7.1. |
+| `NotificationSender` + `LogSender` como punto de extensión; ningún flujo envía push desde el servidor. | S-13 y S-15: la app programa notificaciones locales con `/recordatorios/pendientes`. |
+| El repositorio de recordatorios lee micro-pausas y configuración con sus propias consultas (solo lectura). | Esos servicios regeneran recordatorios: usarlos crearía un ciclo de imports. |

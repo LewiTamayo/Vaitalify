@@ -6,6 +6,7 @@ import { crearRng, type Rng } from '../../common/utils/random.js';
 import { formatHHmm } from '../../common/utils/time.js';
 import * as actividades from '../actividades/actividades.service.js';
 import * as ventanas from '../micro-ventanas/micro-ventanas.service.js';
+import { regenerarSinFallar } from '../recordatorios/recordatorios.service.js';
 import * as repo from './micro-pausas.repository.js';
 import type { Estado, FiltrosPausas, MicroPausaDto } from './micro-pausas.schemas.js';
 import { recomendarActividad } from './recomendacion.domain.js';
@@ -96,6 +97,7 @@ export async function recomendar(
       ? await elegirActividad(idUsuario, ventana.duracionMin, rng)
       : await actividadQueCabe(idActividad, ventana.duracionMin);
   const idPausa = await insertar(idUsuario, idVentana, elegida);
+  await regenerarSinFallar(idUsuario, ventana.fecha);
   return aDto(await obtenerFila(idUsuario, idPausa));
 }
 
@@ -131,6 +133,8 @@ export async function cambiarEstado(
     fechaRegistro: new Date(),
   });
   if (!actualizada) throw noEncontrada();
+  // Una pausa hecha u omitida ya no necesita su recordatorio.
+  await regenerarSinFallar(idUsuario, formatFecha(pausa.ventana.fecha));
   return aDto(actualizada);
 }
 
@@ -148,10 +152,13 @@ export async function cambiarActividad(
     idActividad: elegida.idActividad,
   });
   if (!actualizada) throw noEncontrada();
+  await regenerarSinFallar(idUsuario, formatFecha(pausa.ventana.fecha));
   return aDto(actualizada);
 }
 
 // S-09: borrar una pausa hecha no revierte puntos.
 export async function eliminar(idUsuario: number, idPausa: number): Promise<void> {
+  const pausa = await obtenerFila(idUsuario, idPausa);
   if (!(await repo.eliminar(idUsuario, idPausa))) throw noEncontrada();
+  await regenerarSinFallar(idUsuario, formatFecha(pausa.ventana.fecha));
 }

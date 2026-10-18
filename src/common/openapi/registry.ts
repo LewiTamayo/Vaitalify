@@ -58,6 +58,19 @@ export function cuerpoJson<T extends z.ZodType>(schema: T) {
   return { content: { 'application/json': { schema } } };
 }
 
+// Cabecera opcional de reintentos offline (RNF-09). Si se reutiliza, la respuesta incluye
+// la cabecera "Idempotent-Replayed: true".
+export const cabeceraIdempotencia = z.object({
+  'Idempotency-Key': z
+    .string()
+    .optional()
+    .openapi({
+      description:
+        'Reintentos offline: la misma clave devuelve la misma respuesta durante 24 h ' +
+        '(con la cabecera Idempotent-Replayed: true) sin repetir el cambio',
+    }),
+});
+
 export function esquemaPaginado<T extends z.ZodType>(item: T) {
   return z.object({
     data: z.array(item),

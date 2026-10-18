@@ -17,6 +17,7 @@ const defaults: Record<string, string> = {
   CORS_ORIGINS: 'http://localhost:5173',
   // Coste mínimo permitido: los tests no miden bcrypt y así corren más rápido.
   BCRYPT_COST: '10',
+  CRON_SECRET: randomBytes(32).toString('hex'),
 };
 
 for (const [clave, valor] of Object.entries(defaults)) {

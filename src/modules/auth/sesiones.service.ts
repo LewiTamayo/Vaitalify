@@ -44,6 +44,10 @@ export async function cerrarSesion(idUsuario: number, refreshToken: string): Pro
   }
 }
 
+export function limpiarSesionesCaducadas(): Promise<number> {
+  return repo.borrarCaducados(new Date());
+}
+
 export function cerrarTodasLasSesiones(idUsuario: number): Promise<void> {
   return repo.revocarTodos(idUsuario);
 }
