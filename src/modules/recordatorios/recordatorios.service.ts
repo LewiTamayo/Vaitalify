@@ -1,17 +1,11 @@
 import { env } from '../../config/env.js';
-import { esUnicoViolado } from '../../common/db/errores-prisma.js';
+import { conBloqueoRecordatorios } from '../../common/db/bloqueos.js';
 import { errores } from '../../common/errors/app-error.js';
 import { logger } from '../../common/logger.js';
-import { hoyEnZona, sumarDias } from '../../common/utils/dates.js';
+import { diaLogico } from '../../common/utils/dates.js';
 import { pagina, type Pagina } from '../../common/utils/pagination.js';
 import { planDelDia } from '../sueno/sueno.service.js';
-import {
-  ambitoDia,
-  aplicarConfig,
-  instanteDia,
-  planSincronizacion,
-  recordatoriosDelDia,
-} from './recordatorios.domain.js';
+import { aplicarConfig, planSincronizacion, recordatoriosDelDia } from './recordatorios.domain.js';
 import * as repo from './recordatorios.repository.js';
 import type {
   ActualizarRecordatorio,
@@ -33,32 +27,38 @@ function aDto(r: repo.FilaRecordatorio): RecordatorioDto {
   };
 }
 
-// Genera (idempotente) los recordatorios de sueño y de pausas del día respetando la config.
-export async function generar(
+// Genera (idempotente) los recordatorios de sueño y de pausas del día lógico respetando la config.
+// Bajo un bloqueo por usuario: dos generaciones simultáneas no pueden dejar planes obsoletos.
+export function generar(
   idUsuario: number,
-  fecha: string = hoyEnZona(),
+  fecha: string = diaLogico(),
 ): Promise<ResultadoGeneracion> {
-  const [plan, pausas, configs] = await Promise.all([
-    planDelDia(idUsuario, fecha),
-    repo.pausasPendientes(idUsuario, fecha),
-    repo.configs(idUsuario),
-  ]);
-  const deseados = aplicarConfig(recordatoriosDelDia(fecha, plan, pausas, zona()), configs, zona());
-  const { desde, hasta } = ambitoDia(fecha, zona());
-  const sincronizacion = planSincronizacion(await repo.enRango(idUsuario, desde, hasta), deseados);
-  await repo.sincronizar(idUsuario, sincronizacion);
-  return {
-    generados: sincronizacion.crear.length,
-    eliminados: sincronizacion.eliminar.length,
-    conservados: sincronizacion.conservados,
-  };
+  return conBloqueoRecordatorios(idUsuario, async (tx) => {
+    const [plan, pausas, configs] = await Promise.all([
+      planDelDia(idUsuario, fecha),
+      repo.pausasPendientes(idUsuario, fecha, tx),
+      repo.configs(idUsuario, tx),
+    ]);
+    const deseados = aplicarConfig(
+      recordatoriosDelDia(fecha, plan, pausas, zona()),
+      configs,
+      zona(),
+    );
+    const sincronizacion = planSincronizacion(await repo.delDia(idUsuario, fecha, tx), deseados);
+    await repo.sincronizar(idUsuario, sincronizacion, tx);
+    return {
+      generados: sincronizacion.crear.length,
+      eliminados: sincronizacion.eliminar.length,
+      conservados: sincronizacion.conservados,
+    };
+  });
 }
 
 // Tras cambios en bloques, perfil, micro-pausas o configuración (§7.7.3). Los recordatorios son
 // datos derivados: un fallo aquí no debe convertir en 500 una operación que ya se guardó.
 export async function regenerarSinFallar(
   idUsuario: number,
-  fecha: string = hoyEnZona(),
+  fecha: string = diaLogico(),
 ): Promise<void> {
   try {
     await generar(idUsuario, fecha);
@@ -71,16 +71,7 @@ export async function listar(
   idUsuario: number,
   filtros: FiltrosRecordatorios,
 ): Promise<Pagina<RecordatorioDto>> {
-  const { filas, total } = await repo.listar(
-    idUsuario,
-    {
-      tipo: filtros.tipo,
-      enviado: filtros.enviado,
-      desde: filtros.desde ? instanteDia(filtros.desde, '00:00', zona()) : undefined,
-      hasta: filtros.hasta ? instanteDia(sumarDias(filtros.hasta, 1), '00:00', zona()) : undefined,
-    },
-    filtros,
-  );
+  const { filas, total } = await repo.listar(idUsuario, filtros, filtros);
   return pagina(filas.map(aDto), total, filtros);
 }
 
@@ -113,20 +104,13 @@ export async function actualizar(
   if (editaContenido && actual.enviado) {
     throw errores.reglaNegocio('No se puede editar un recordatorio que ya se envió');
   }
-  try {
-    const r = await repo.actualizar(idUsuario, id, {
-      mensaje: cambios.mensaje,
-      fechaHoraEnvio: cambios.fechaHoraEnvio ? new Date(cambios.fechaHoraEnvio) : undefined,
-      enviado: cambios.enviado,
-    });
-    if (!r) throw noEncontrado();
-    return aDto(r);
-  } catch (error) {
-    if (esUnicoViolado(error)) {
-      throw errores.conflicto('Ya hay un recordatorio de ese tipo a esa hora');
-    }
-    throw error;
-  }
+  const r = await repo.actualizar(idUsuario, id, {
+    mensaje: cambios.mensaje,
+    fechaHoraEnvio: cambios.fechaHoraEnvio ? new Date(cambios.fechaHoraEnvio) : undefined,
+    enviado: cambios.enviado,
+  });
+  if (!r) throw noEncontrado();
+  return aDto(r);
 }
 
 export async function eliminar(idUsuario: number, id: number): Promise<void> {

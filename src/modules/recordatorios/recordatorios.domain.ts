@@ -1,15 +1,19 @@
 import { DateTime } from 'luxon';
 import { sumarDias } from '../../common/utils/dates.js';
-import { aMinutos, deMinutos } from '../../common/utils/time.js';
+import { aMinutos } from '../../common/utils/time.js';
 import type { PlanSueno } from '../sueno/sueno.domain.js';
 
-// Recordatorios de un día (§7.3, §7.7). Funciones puras: instantes en UTC calculados desde
-// horas locales en la zona del usuario.
+// Recordatorios de un día lógico D (§7.3, §7.7). Funciones puras: instantes en UTC calculados
+// desde horas locales en la zona del usuario.
 
 export type TipoRecordatorio = 'sueno' | 'pausa';
 
 export interface Deseado {
   tipo: TipoRecordatorio;
+  // Día lógico al que pertenece (la noche de D, aunque se envíe en la madrugada de D+1).
+  fecha: string;
+  // tipo|instante generado: identifica el recordatorio aunque el usuario edite su hora.
+  claveOrigen: string;
   mensaje: string;
   fechaHoraEnvio: Date;
   // Después de este instante el recordatorio ya no tiene sentido (para el horario de silencio).
@@ -23,8 +27,7 @@ export interface Config {
   silencioFin: string | null;
 }
 
-const MEDIODIA = 12 * 60;
-const HORA_CORTE_DIA = '04:00';
+const MINUTOS_DIA = 1440;
 const AVISO_PAUSA_MIN = 5;
 const PANTALLAS_MIN = 30;
 
@@ -32,38 +35,44 @@ export function instanteDia(fecha: string, hora: string, zona: string): Date {
   return DateTime.fromISO(`${fecha}T${hora}`, { zone: zona }).toJSDate();
 }
 
-// Una hora "de la noche" anterior al mediodía (p. ej. 00:30) ya es el día siguiente.
-export function instanteNoche(fecha: string, hora: string, zona: string): Date {
-  const dia = aMinutos(hora) < MEDIODIA ? sumarDias(fecha, 1) : fecha;
-  return instanteDia(dia, hora, zona);
+const menosMinutos = (d: Date, minutos: number) => new Date(d.getTime() - minutos * 60_000);
+
+function nuevo(datos: Omit<Deseado, 'claveOrigen'>): Deseado {
+  return { ...datos, claveOrigen: `${datos.tipo}|${datos.fechaHoraEnvio.toISOString()}` };
 }
 
-export function ambitoDia(fecha: string, zona: string): { desde: Date; hasta: Date } {
-  return {
-    desde: instanteDia(fecha, HORA_CORTE_DIA, zona),
-    hasta: instanteDia(sumarDias(fecha, 1), HORA_CORTE_DIA, zona),
-  };
+// El despertar es siempre en D+1, salvo que la primera actividad sea justo después de medianoche
+// y el despertar caiga todavía en D (p. ej. actividad 00:30 → despertar 23:45 de D).
+function instanteDespertar(fecha: string, plan: PlanSueno, zona: string): Date {
+  const primera = plan.primeraActividad;
+  const antesDeMedianoche =
+    primera !== null && aMinutos(plan.despertar) > aMinutos(primera.horaInicio);
+  return instanteDia(antesDeMedianoche ? fecha : sumarDias(fecha, 1), plan.despertar, zona);
 }
 
+// Los instantes de sueño se anclan al despertar y se calculan hacia atrás: así una hora de
+// acostarse de madrugada (día que empieza por la tarde) cae en D+1 y nunca en el día equivocado.
 function recordatoriosDeSueno(fecha: string, plan: PlanSueno, zona: string): Deseado[] {
-  const limite = instanteNoche(fecha, plan.despertar, zona);
+  const despertar = instanteDespertar(fecha, plan, zona);
+  const minutosDeSueno =
+    (aMinutos(plan.despertar) - aMinutos(plan.acostarse) + MINUTOS_DIA) % MINUTOS_DIA ||
+    MINUTOS_DIA;
+  const acostarse = menosMinutos(despertar, minutosDeSueno);
   return [
-    {
+    nuevo({
       tipo: 'sueno',
+      fecha,
       mensaje: 'Deja las pantallas: en 30 minutos es hora de dormir',
-      fechaHoraEnvio: instanteNoche(
-        fecha,
-        deMinutos(aMinutos(plan.acostarse) - PANTALLAS_MIN),
-        zona,
-      ),
-      limite,
-    },
-    {
+      fechaHoraEnvio: menosMinutos(acostarse, PANTALLAS_MIN),
+      limite: despertar,
+    }),
+    nuevo({
       tipo: 'sueno',
+      fecha,
       mensaje: 'Hora de dormir para cumplir tu meta de sueño',
-      fechaHoraEnvio: instanteNoche(fecha, plan.acostarse, zona),
-      limite,
-    },
+      fechaHoraEnvio: acostarse,
+      limite: despertar,
+    }),
   ];
 }
 
@@ -73,12 +82,16 @@ export function recordatoriosDelDia(
   pausas: { horaInicio: string; actividad: string }[],
   zona: string,
 ): Deseado[] {
-  const pausasDeseadas = pausas.map<Deseado>((p) => ({
-    tipo: 'pausa',
-    mensaje: `En 5 minutos: ${p.actividad}`,
-    fechaHoraEnvio: instanteDia(fecha, deMinutos(aMinutos(p.horaInicio) - AVISO_PAUSA_MIN), zona),
-    limite: instanteDia(fecha, p.horaInicio, zona),
-  }));
+  const pausasDeseadas = pausas.map((p) => {
+    const inicio = instanteDia(fecha, p.horaInicio, zona);
+    return nuevo({
+      tipo: 'pausa',
+      fecha,
+      mensaje: `En 5 minutos: ${p.actividad}`,
+      fechaHoraEnvio: menosMinutos(inicio, AVISO_PAUSA_MIN),
+      limite: inicio,
+    });
+  });
   return [...(plan ? recordatoriosDeSueno(fecha, plan, zona) : []), ...pausasDeseadas];
 }
 
@@ -101,6 +114,7 @@ function respetarSilencio(d: Deseado, config: Config | undefined, zona: string):
   const local = DateTime.fromJSDate(d.fechaHoraEnvio, { zone: zona });
   if (!enSilencio(local.hour * 60 + local.minute, inicio, fin)) return d;
   const movido = finDelSilencio(local, inicio, fin).toJSDate();
+  // Se mueve conservando su clave de origen: sigue siendo "el mismo" recordatorio.
   return movido.getTime() <= d.limite.getTime() ? { ...d, fechaHoraEnvio: movido } : null;
 }
 
@@ -115,26 +129,23 @@ export function aplicarConfig(deseados: Deseado[], configs: Config[], zona: stri
 
 interface Existente {
   idRecordatorio: number;
-  tipo: TipoRecordatorio;
-  fechaHoraEnvio: Date;
+  claveOrigen: string;
   enviado: boolean;
 }
 
-const clave = (r: { tipo: string; fechaHoraEnvio: Date }) =>
-  `${r.tipo}|${r.fechaHoraEnvio.toISOString()}`;
-
-// Idempotente: lo ya existente no se duplica; lo enviado nunca se borra.
+// Idempotente y por clave de origen: lo ya existente (aunque el usuario haya editado su hora) no
+// se duplica ni se recrea; lo enviado nunca se borra.
 export function planSincronizacion(
   existentes: Existente[],
   deseados: Deseado[],
 ): { crear: Deseado[]; eliminar: number[]; conservados: number } {
-  const claves = new Set(deseados.map(clave));
-  const existentesPorClave = new Set(existentes.map(clave));
+  const deseadas = new Set(deseados.map((d) => d.claveOrigen));
+  const existentesPorClave = new Set(existentes.map((e) => e.claveOrigen));
   const eliminar = existentes
-    .filter((e) => !e.enviado && !claves.has(clave(e)))
+    .filter((e) => !e.enviado && !deseadas.has(e.claveOrigen))
     .map((e) => e.idRecordatorio);
   return {
-    crear: deseados.filter((d) => !existentesPorClave.has(clave(d))),
+    crear: deseados.filter((d) => !existentesPorClave.has(d.claveOrigen)),
     eliminar,
     conservados: existentes.length - eliminar.length,
   };

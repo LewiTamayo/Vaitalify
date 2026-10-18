@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ambitoDia,
   aplicarConfig,
   instanteDia,
-  instanteNoche,
   planSincronizacion,
   recordatoriosDelDia,
   type Config,
@@ -13,11 +11,8 @@ import { calcularPlanSueno } from '../../../../src/modules/sueno/sueno.domain.js
 
 const ZONA = 'America/Bogota';
 const D = '2026-10-19';
-const PLAN = calcularPlanSueno(
-  { horaDormir: '22:45', horaDespertar: '06:15', metaHorasSueno: 7.5 },
-  [{ titulo: 'Clase', horaInicio: '07:00' }],
-  45,
-);
+const PERFIL = { horaDormir: '22:45', horaDespertar: '06:15', metaHorasSueno: 7.5 };
+const PLAN = calcularPlanSueno(PERFIL, [{ titulo: 'Clase', horaInicio: '07:00' }], 45);
 const iso = (d: Date) => d.toISOString();
 
 const config = (tipo: Config['tipo'], cambios: Partial<Config> = {}): Config => ({
@@ -29,23 +24,14 @@ const config = (tipo: Config['tipo'], cambios: Partial<Config> = {}): Config => 
 });
 const TODAS = [config('sueno'), config('pausa'), config('logros')];
 
-describe('instantes', () => {
-  it('una hora de la noche anterior a las 12:00 pertenece al día siguiente', () => {
-    expect(iso(instanteNoche(D, '00:30', ZONA))).toBe('2026-10-20T05:30:00.000Z');
-    expect(iso(instanteNoche(D, '22:15', ZONA))).toBe('2026-10-20T03:15:00.000Z');
+describe('instanteDia', () => {
+  it('hora local de una fecha en la zona del usuario', () => {
     expect(iso(instanteDia(D, '09:55', ZONA))).toBe('2026-10-19T14:55:00.000Z');
-  });
-
-  it('ámbito del día: [D 04:00, D+1 04:00) locales', () => {
-    expect(ambitoDia(D, ZONA)).toEqual({
-      desde: new Date('2026-10-19T09:00:00.000Z'),
-      hasta: new Date('2026-10-20T09:00:00.000Z'),
-    });
   });
 });
 
 describe('recordatoriosDelDia', () => {
-  it('dos de sueño (acostarse − 30 y acostarse) y uno por pausa 5 min antes', () => {
+  it('dos de sueño (acostarse − 30 y acostarse) y uno por pausa 5 min antes, todos del día D', () => {
     const r = recordatoriosDelDia(
       D,
       PLAN,
@@ -57,9 +43,37 @@ describe('recordatoriosDelDia', () => {
       ['sueno', '2026-10-20T03:45:00.000Z'],
       ['pausa', '2026-10-19T14:55:00.000Z'],
     ]);
+    expect(r.every((x) => x.fecha === D)).toBe(true);
     expect(r[2]!.mensaje).toContain('Caminata corta');
     expect(iso(r[0]!.limite)).toBe('2026-10-20T11:15:00.000Z'); // despertar 06:15 de D+1
     expect(iso(r[2]!.limite)).toBe('2026-10-19T15:00:00.000Z'); // inicio de la ventana
+  });
+
+  it('la clave de origen identifica el recordatorio por tipo e instante generado', () => {
+    const [primero] = recordatoriosDelDia(D, PLAN, [], ZONA);
+    expect(primero!.claveOrigen).toBe('sueno|2026-10-20T03:15:00.000Z');
+  });
+
+  it('día que empieza por la tarde: acostarse 05:45 de D+1 y límite en el despertar de D+1', () => {
+    const tarde = calcularPlanSueno(PERFIL, [{ titulo: 'Turno', horaInicio: '14:00' }], 45);
+    expect(tarde.acostarse).toBe('05:45');
+    const [pantallas, dormir] = recordatoriosDelDia(D, tarde, [], ZONA);
+    expect(iso(pantallas!.fechaHoraEnvio)).toBe('2026-10-20T10:15:00.000Z'); // 05:15 de D+1
+    expect(iso(dormir!.fechaHoraEnvio)).toBe('2026-10-20T10:45:00.000Z'); // 05:45 de D+1
+    expect(iso(dormir!.limite)).toBe('2026-10-20T18:15:00.000Z'); // 13:15 de D+1
+    expect(dormir!.fecha).toBe(D);
+  });
+
+  it('acostarse después de medianoche (00:30) cae en D+1', () => {
+    const tarde = calcularPlanSueno({ ...PERFIL, horaDormir: '00:30' }, [], 45);
+    const [, dormir] = recordatoriosDelDia(D, tarde, [], ZONA);
+    expect(iso(dormir!.fechaHoraEnvio)).toBe('2026-10-20T05:30:00.000Z');
+  });
+
+  it('una pausa a las 00:02 avisa 5 min antes (23:57 del día anterior), no después', () => {
+    const [aviso] = recordatoriosDelDia(D, null, [{ horaInicio: '00:02', actividad: 'x' }], ZONA);
+    expect(iso(aviso!.fechaHoraEnvio)).toBe('2026-10-19T04:57:00.000Z');
+    expect(aviso!.fechaHoraEnvio.getTime()).toBeLessThan(aviso!.limite.getTime());
   });
 
   it('sin plan de sueño (sin perfil) solo hay recordatorios de pausa', () => {
@@ -99,7 +113,7 @@ describe('aplicarConfig', () => {
     expect(r.map((x) => iso(x.fechaHoraEnvio))).toEqual(['2026-10-19T14:55:00.000Z']);
   });
 
-  it('si el fin del silencio aún es útil, el recordatorio se mueve al fin del silencio', () => {
+  it('si el fin del silencio aún es útil, se mueve y conserva su clave de origen', () => {
     const r = aplicarConfig(
       deseados,
       [config('sueno'), config('pausa', { silencioInicio: '09:00', silencioFin: '09:58' })],
@@ -107,6 +121,20 @@ describe('aplicarConfig', () => {
     );
     const pausa10 = r.find((x) => x.mensaje.includes(': b'));
     expect(iso(pausa10!.fechaHoraEnvio)).toBe('2026-10-19T14:58:00.000Z');
+    expect(pausa10!.claveOrigen).toBe('pausa|2026-10-19T14:55:00.000Z');
+  });
+
+  it('día de tarde con silencio 05:00→06:00: el sueño se mueve a las 06:00 (antes del despertar)', () => {
+    const tarde = calcularPlanSueno(PERFIL, [{ titulo: 'Turno', horaInicio: '14:00' }], 45);
+    const r = aplicarConfig(
+      recordatoriosDelDia(D, tarde, [], ZONA),
+      [config('sueno', { silencioInicio: '05:00', silencioFin: '06:00' })],
+      ZONA,
+    );
+    expect(r.map((x) => iso(x.fechaHoraEnvio))).toEqual([
+      '2026-10-20T11:00:00.000Z',
+      '2026-10-20T11:00:00.000Z',
+    ]);
   });
 
   it('sin configuración de un tipo se asume activo y sin silencio', () => {
@@ -115,36 +143,40 @@ describe('aplicarConfig', () => {
   });
 });
 
-describe('planSincronizacion', () => {
-  const deseado = (tipo: Deseado['tipo'], instante: string): Deseado => ({
-    tipo,
+describe('planSincronizacion (por clave de origen)', () => {
+  const deseado = (claveOrigen: string): Deseado => ({
+    tipo: 'sueno',
+    fecha: D,
+    claveOrigen,
     mensaje: 'm',
-    fechaHoraEnvio: new Date(instante),
-    limite: new Date(instante),
+    fechaHoraEnvio: new Date(claveOrigen.split('|')[1]!),
+    limite: new Date(claveOrigen.split('|')[1]!),
   });
-  const existente = (
-    idRecordatorio: number,
-    tipo: Deseado['tipo'],
-    instante: string,
-    enviado = false,
-  ) => ({
+  const existente = (idRecordatorio: number, claveOrigen: string, enviado = false) => ({
     idRecordatorio,
-    tipo,
-    fechaHoraEnvio: new Date(instante),
+    claveOrigen,
     enviado,
   });
 
   it('conserva los iguales, crea los nuevos, elimina los obsoletos no enviados y nunca los enviados', () => {
     const plan = planSincronizacion(
       [
-        existente(1, 'sueno', '2026-10-20T03:15:00Z'),
-        existente(2, 'pausa', '2026-10-19T14:55:00Z'),
-        existente(3, 'pausa', '2026-10-19T12:00:00Z', true),
+        existente(1, 'sueno|2026-10-20T03:15:00.000Z'),
+        existente(2, 'pausa|2026-10-19T14:55:00.000Z'),
+        existente(3, 'pausa|2026-10-19T12:00:00.000Z', true),
       ],
-      [deseado('sueno', '2026-10-20T03:15:00Z'), deseado('sueno', '2026-10-20T03:45:00Z')],
+      [deseado('sueno|2026-10-20T03:15:00.000Z'), deseado('sueno|2026-10-20T03:45:00.000Z')],
     );
-    expect(plan.crear.map((d) => iso(d.fechaHoraEnvio))).toEqual(['2026-10-20T03:45:00.000Z']);
+    expect(plan.crear.map((d) => d.claveOrigen)).toEqual(['sueno|2026-10-20T03:45:00.000Z']);
     expect(plan.eliminar).toEqual([2]);
     expect(plan.conservados).toBe(2);
+  });
+
+  it('un recordatorio editado (otra hora, misma clave de origen) se conserva y no se recrea', () => {
+    const plan = planSincronizacion(
+      [existente(1, 'sueno|2026-10-20T03:15:00.000Z')],
+      [deseado('sueno|2026-10-20T03:15:00.000Z')],
+    );
+    expect(plan).toEqual({ crear: [], eliminar: [], conservados: 1 });
   });
 });

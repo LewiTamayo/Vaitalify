@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
-import { hoyEnZona } from '../../src/common/utils/dates.js';
+import { hoyEnZona, isoWeekday, sumarDias } from '../../src/common/utils/dates.js';
 import {
   bearer,
   crearAppTest,
@@ -96,6 +96,39 @@ describe('configuración y regeneración automática', () => {
     const pausas = await deHoy(s, 'pausa');
     expect(pausas).toHaveLength(1);
     expect(pausas[0]!.mensaje).toMatch(/^En 5 minutos: /);
+  });
+});
+
+describe('casos límite de la generación', () => {
+  it('día que empieza por la tarde: generar el día siguiente no borra los recordatorios de sueño de hoy', async () => {
+    const s = await conPerfil();
+    const manana = sumarDias(HOY, 1);
+    await enviar(s, 'post', '/bloques', {
+      tipo: 'trabajo',
+      titulo: 'Turno de tarde',
+      diaSemana: isoWeekday(manana),
+      horaInicio: '14:00',
+      horaFin: '20:00',
+    });
+    expect(await deHoy(s, 'sueno')).toHaveLength(2);
+    await enviar(s, 'post', '/recordatorios/generar', { fecha: manana });
+    expect(await deHoy(s, 'sueno')).toHaveLength(2);
+  });
+
+  it('una hora editada por el usuario sobrevive a la regeneración y no se duplica', async () => {
+    const s = await conPerfil();
+    const [r] = await deHoy(s, 'sueno');
+    const nuevaHora = new Date(new Date(r!.fechaHoraEnvio).getTime() - 15 * 60_000).toISOString();
+    const editado = await enviar(s, 'patch', `/recordatorios/${r!.idRecordatorio}`, {
+      fechaHoraEnvio: nuevaHora,
+    });
+    expect(editado.status).toBe(200);
+    await enviar(s, 'post', '/recordatorios/generar', { fecha: HOY });
+    const despues = await deHoy(s, 'sueno');
+    expect(despues).toHaveLength(2);
+    expect(despues.find((x) => x.idRecordatorio === r!.idRecordatorio)?.fechaHoraEnvio).toBe(
+      nuevaHora,
+    );
   });
 });
 

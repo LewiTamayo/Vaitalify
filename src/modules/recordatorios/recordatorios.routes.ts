@@ -38,7 +38,7 @@ registry.registerPath({
   ...comun,
   method: 'get',
   path: '/recordatorios',
-  summary: 'Lista los recordatorios (filtros tipo, enviado, desde, hasta)',
+  summary: 'Lista los recordatorios (filtros tipo, enviado y desde/hasta por día lógico)',
   request: { query: FiltrosRecordatoriosSchema },
   responses: {
     200: { description: 'Página', ...cuerpoJson(esquemaPaginado(RecordatorioSchema)) },
@@ -67,7 +67,7 @@ registry.registerPath({
   method: 'patch',
   summary: 'Edita mensaje/instante (si no se envió) o marca { enviado: true }',
   request: { ...conId.request, body: cuerpoJson(ActualizarRecordatorioSchema) },
-  responses: { 200: respuesta('Recordatorio'), ...respuestasError(400, 401, 404, 409, 422) },
+  responses: { 200: respuesta('Recordatorio'), ...respuestasError(400, 401, 404, 422) },
 });
 registry.registerPath({
   ...conId,

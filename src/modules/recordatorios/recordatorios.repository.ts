@@ -1,5 +1,6 @@
+import type { Tx } from '../../common/db/bloqueos.js';
 import { prisma, type Prisma } from '../../common/db/prisma.js';
-import { parseFecha } from '../../common/utils/dates.js';
+import { filtroFechas, parseFecha } from '../../common/utils/dates.js';
 import { aSkipTake } from '../../common/utils/pagination.js';
 import { formatHHmm } from '../../common/utils/time.js';
 import type { Config, Deseado } from './recordatorios.domain.js';
@@ -7,8 +8,8 @@ import type { Config, Deseado } from './recordatorios.domain.js';
 // Lecturas (solo) de micro-pausas y configuración: se consultan aquí para no crear ciclos de
 // imports con los servicios que regeneran recordatorios tras sus cambios.
 
-export async function pausasPendientes(idUsuario: number, fecha: string) {
-  const filas = await prisma.microPausa.findMany({
+export async function pausasPendientes(idUsuario: number, fecha: string, db: Tx = prisma) {
+  const filas = await db.microPausa.findMany({
     where: { estado: 'pendiente', ventana: { idUsuario, fecha: parseFecha(fecha) } },
     select: { ventana: { select: { horaInicio: true } }, actividad: { select: { nombre: true } } },
   });
@@ -18,8 +19,8 @@ export async function pausasPendientes(idUsuario: number, fecha: string) {
   }));
 }
 
-export async function configs(idUsuario: number): Promise<Config[]> {
-  const filas = await prisma.configNotificacion.findMany({ where: { idUsuario } });
+export async function configs(idUsuario: number, db: Tx = prisma): Promise<Config[]> {
+  const filas = await db.configNotificacion.findMany({ where: { idUsuario } });
   return filas.map((c) => ({
     tipo: c.tipo,
     activa: c.activa,
@@ -28,48 +29,55 @@ export async function configs(idUsuario: number): Promise<Config[]> {
   }));
 }
 
-export function enRango(idUsuario: number, desde: Date, hasta: Date) {
-  return prisma.recordatorio.findMany({
-    where: { idUsuario, fechaHoraEnvio: { gte: desde, lt: hasta } },
-    select: { idRecordatorio: true, tipo: true, fechaHoraEnvio: true, enviado: true },
+// Recordatorios del día lógico D (ya no por rango de instantes: la hora se puede editar).
+export function delDia(idUsuario: number, fecha: string, db: Tx) {
+  return db.recordatorio.findMany({
+    where: { idUsuario, fecha: parseFecha(fecha) },
+    select: { idRecordatorio: true, claveOrigen: true, enviado: true },
   });
 }
 
+// Se ejecuta dentro de la transacción con bloqueo (conBloqueoRecordatorios).
 export async function sincronizar(
   idUsuario: number,
   plan: { crear: Deseado[]; eliminar: number[] },
+  db: Tx,
 ): Promise<void> {
-  await prisma.$transaction([
-    prisma.recordatorio.deleteMany({
+  if (plan.eliminar.length > 0) {
+    await db.recordatorio.deleteMany({
       where: { idUsuario, enviado: false, idRecordatorio: { in: plan.eliminar } },
-    }),
-    prisma.recordatorio.createMany({
+    });
+  }
+  if (plan.crear.length > 0) {
+    await db.recordatorio.createMany({
       data: plan.crear.map((d) => ({
         idUsuario,
         tipo: d.tipo,
+        fecha: parseFecha(d.fecha),
+        claveOrigen: d.claveOrigen,
         mensaje: d.mensaje,
         fechaHoraEnvio: d.fechaHoraEnvio,
       })),
       skipDuplicates: true,
-    }),
-  ]);
+    });
+  }
 }
 
 export async function listar(
   idUsuario: number,
-  filtros: { tipo?: 'sueno' | 'pausa'; enviado?: boolean; desde?: Date; hasta?: Date },
+  filtros: { tipo?: 'sueno' | 'pausa'; enviado?: boolean; desde?: string; hasta?: string },
   paginacion: { page: number; pageSize: number },
 ) {
   const where: Prisma.RecordatorioWhereInput = {
     idUsuario,
     tipo: filtros.tipo,
     enviado: filtros.enviado,
-    fechaHoraEnvio: { gte: filtros.desde, lt: filtros.hasta },
+    fecha: filtroFechas(filtros.desde, filtros.hasta),
   };
   const [filas, total] = await prisma.$transaction([
     prisma.recordatorio.findMany({
       where,
-      orderBy: { fechaHoraEnvio: 'asc' },
+      orderBy: [{ fecha: 'asc' }, { fechaHoraEnvio: 'asc' }],
       ...aSkipTake(paginacion),
     }),
     prisma.recordatorio.count({ where }),

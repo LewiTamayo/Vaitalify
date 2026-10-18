@@ -73,3 +73,14 @@ export function filtroFechas(
     lte: hasta ? parseFecha(hasta) : undefined,
   };
 }
+
+// Día lógico de los recordatorios: corta a las 04:00 locales. Entre las 00:00 y las 04:00 todavía
+// es "la noche de ayer" (sus recordatorios de sueño pertenecen al día anterior).
+export const HORAS_CORTE_DIA_LOGICO = 4;
+
+export function diaLogico(
+  zona: string = process.env.APP_TZ ?? APP_TZ_DEFAULT,
+  ahora: DateTime = DateTime.utc(),
+): string {
+  return hoyEnZona(zona, ahora.minus({ hours: HORAS_CORTE_DIA_LOGICO }));
+}

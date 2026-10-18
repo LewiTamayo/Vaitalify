@@ -49,3 +49,15 @@ describe('dates', () => {
     expect(() => parseFecha('2026-02-30')).toThrow();
   });
 });
+
+describe('diaLogico', () => {
+  it('entre las 00:00 y las 04:00 de Bogotá sigue siendo el día anterior', async () => {
+    const { diaLogico } = await import('../../../../src/common/utils/dates.js');
+    expect(diaLogico('America/Bogota', DateTime.fromISO('2026-10-20T07:30:00Z'))).toBe(
+      '2026-10-19',
+    ); // 02:30
+    expect(diaLogico('America/Bogota', DateTime.fromISO('2026-10-20T09:30:00Z'))).toBe(
+      '2026-10-20',
+    ); // 04:30
+  });
+});
