@@ -21,8 +21,12 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:test": "cross-env DOTENV_CONFIG_PATH=.env.test prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "perf:migrate": "cross-env DOTENV_CONFIG_PATH=.env.perf prisma migrate deploy",
+    "perf:seed": "cross-env DOTENV_CONFIG_PATH=.env.perf tsx --import dotenv/config prisma/seed.ts",
     "db:seed:perf": "tsx prisma/seed-perf.ts",
-    "perf:start": "cross-env APP_ENV=perf RATE_LIMIT_ENABLED=false tsx src/local.ts"
+    "perf:start": "tsx scripts/perf-start.ts",
+    "perf:run": "tsx tests/performance/ejecutar.ts",
+    "perf:resumen": "tsx tests/performance/resumen.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^9.1.0",
