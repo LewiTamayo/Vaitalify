@@ -59,11 +59,11 @@ export function rachaVigente(
 ): { rachaActual: number; comodinesRestantes: number } {
   const comodines = estado.semanaComodin === semanaIso(hoy) ? estado.diasComodin : COMODINES_SEMANA;
   if (estado.ultimaFechaActiva === null) return { rachaActual: 0, comodinesRestantes: comodines };
-  const perdidos = diasEntre(estado.ultimaFechaActiva, hoy) - 1;
-  return {
-    rachaActual: perdidos <= comodines ? estado.rachaActual : 0,
-    comodinesRestantes: comodines,
-  };
+  const perdidos = Math.max(diasEntre(estado.ultimaFechaActiva, hoy) - 1, 0);
+  // Los días ya perdidos hasta hoy consumirán comodines cuando haya una nueva actividad.
+  return perdidos <= comodines
+    ? { rachaActual: estado.rachaActual, comodinesRestantes: comodines - perdidos }
+    : { rachaActual: 0, comodinesRestantes: comodines };
 }
 
 export interface ContextoInsignias {

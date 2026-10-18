@@ -70,16 +70,17 @@ function aplicar(idUsuario: number, otorgamiento?: Otorgamiento): Promise<Result
   });
 }
 
+// Los puntos de una pausa se ligan a su ventana (clave natural fecha|horaInicio), no al id de la
+// pausa: borrarla y volver a crearla en la misma ventana no vuelve a dar puntos.
 export function trasCambioDePausa(
   idUsuario: number,
-  idPausa: number,
+  ventana: { fecha: string; horaInicio: string },
   estado: 'pendiente' | 'hecha' | 'omitida',
 ): Promise<ResultadoGamificacion> {
+  const referencia = `${ventana.fecha}|${ventana.horaInicio}`;
   return aplicar(
     idUsuario,
-    estado === 'hecha'
-      ? { concepto: 'pausa', referencia: String(idPausa), puntos: PUNTOS_PAUSA }
-      : undefined,
+    estado === 'hecha' ? { concepto: 'pausa', referencia, puntos: PUNTOS_PAUSA } : undefined,
   );
 }
 

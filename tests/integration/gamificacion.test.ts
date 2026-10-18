@@ -96,6 +96,20 @@ describe('puntos y racha al registrar el cumplimiento', () => {
   });
 });
 
+describe('sin farmeo de puntos', () => {
+  it('borrar la pausa hecha y volver a crearla en la misma ventana no da puntos otra vez', async () => {
+    const { s, pausas } = await conPausasHoy();
+    const primera = await marcar(s, pausas[0]!, 'hecha');
+    const { idVentana } = primera.body.ventana as { idVentana: number };
+    await enviar(s, 'delete', `/micro-pausas/${pausas[0]}`);
+    const nueva = await enviar(s, 'post', `/micro-ventanas/${idVentana}/micro-pausa`, {});
+    expect(nueva.status).toBe(201);
+    const otra = await marcar(s, nueva.body.idPausa as number, 'hecha');
+    expect(otra.body.puntosGanados).toBe(0);
+    expect((await progreso(s)).puntosTotales).toBe(10);
+  });
+});
+
 describe('puntos por cumplir la meta de sueño', () => {
   it('+5 una sola vez por fecha, aunque se borre y se vuelva a registrar', async () => {
     const { s } = await conPausasHoy();
@@ -119,7 +133,7 @@ describe('insignias', () => {
     });
     // Historial: 9 días anteriores con una pausa hecha y sus puntos ya otorgados.
     for (let i = 1; i <= 9; i++) {
-      const ventana = await prisma.microVentana.create({
+      await prisma.microVentana.create({
         data: {
           idUsuario,
           fecha: parseFecha(sumarDias(HOY, -i)),
@@ -127,13 +141,12 @@ describe('insignias', () => {
           duracionMin: 15,
           microPausa: { create: { idActividad, estado: 'hecha', fechaRegistro: new Date() } },
         },
-        include: { microPausa: true },
       });
       await prisma.puntosOtorgados.create({
         data: {
           idUsuario,
           concepto: 'pausa',
-          referencia: String(ventana.microPausa!.idPausa),
+          referencia: `${sumarDias(HOY, -i)}|20:00`,
           puntos: 10,
         },
       });

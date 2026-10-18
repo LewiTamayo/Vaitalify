@@ -200,7 +200,7 @@ model PuntosOtorgados {
   idPunto    Int      @id @default(autoincrement()) @map("id_punto")
   idUsuario  Int      @map("id_usuario")
   concepto   String   @db.VarChar(20) // pausa | sueno
-  referencia String   @db.VarChar(40) // idPausa | fecha
+  referencia String   @db.VarChar(40) // pausa: fecha|horaInicio de la ventana; sueño: fecha
   puntos     Int      @db.SmallInt
   creadoEn   DateTime @default(now()) @map("creado_en")
   usuario    Usuario  @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)

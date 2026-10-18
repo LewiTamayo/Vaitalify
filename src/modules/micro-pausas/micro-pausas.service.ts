@@ -142,7 +142,11 @@ export async function cambiarEstado(
   // Una pausa hecha u omitida ya no necesita su recordatorio.
   await regenerarSinFallar(idUsuario, formatFecha(pausa.ventana.fecha));
   // §6.6: la respuesta incluye puntos ganados, racha e insignias nuevas (§7.4).
-  const progreso = await gamificacion.trasCambioDePausa(idUsuario, idPausa, estado);
+  const progreso = await gamificacion.trasCambioDePausa(
+    idUsuario,
+    { fecha: formatFecha(pausa.ventana.fecha), horaInicio: formatHHmm(pausa.ventana.horaInicio) },
+    estado,
+  );
   return { ...aDto(actualizada), ...progreso };
 }
 

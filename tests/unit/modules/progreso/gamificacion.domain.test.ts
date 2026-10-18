@@ -85,7 +85,7 @@ describe('rachaVigente', () => {
 
   it('mantiene la racha si los días perdidos hasta hoy caben en los comodines', () => {
     expect(rachaVigente(estado, '2026-10-05')).toEqual({ rachaActual: 1, comodinesRestantes: 2 });
-    expect(rachaVigente(estado, '2026-10-07')).toEqual({ rachaActual: 1, comodinesRestantes: 2 });
+    expect(rachaVigente(estado, '2026-10-07')).toEqual({ rachaActual: 1, comodinesRestantes: 1 });
   });
 
   it('una racha vieja (más días perdidos que comodines) ya no está vigente', () => {
@@ -96,7 +96,7 @@ describe('rachaVigente', () => {
     const domingo = calcularRacha(['2026-10-04', '2026-10-09', '2026-10-10', '2026-10-11']);
     expect(rachaVigente(domingo, '2026-10-14')).toEqual({
       rachaActual: domingo.rachaActual,
-      comodinesRestantes: 2,
+      comodinesRestantes: 0,
     });
   });
 
