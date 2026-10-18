@@ -37,6 +37,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            web/package-lock.json
 
       - name: Secretos JWT efímeros para los tests
         run: |
@@ -48,6 +51,15 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:coverage
+
+      - name: Front (web/)
+        working-directory: web
+        run: |
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run test:coverage
+          npm run build
 
       - name: Análisis SonarQube Cloud + Quality Gate
         if: env.SONAR_TOKEN != ''
