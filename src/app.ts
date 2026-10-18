@@ -12,6 +12,7 @@ import { env } from './config/env.js';
 import { actividadesRouter } from './modules/actividades/actividades.routes.js';
 import { configNotificacionesRouter } from './modules/config-notificaciones/config-notificaciones.routes.js';
 import { crearAuthRouter } from './modules/auth/auth.routes.js';
+import { insigniasRouter } from './modules/insignias/insignias.routes.js';
 import { jobsRouter } from './modules/jobs/jobs.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { RUTA_IMPORTAR, bloquesRouter } from './modules/bloques/bloques.routes.js';
@@ -68,6 +69,7 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   apiRouter.use(configNotificacionesRouter);
   apiRouter.use(recordatoriosRouter);
   apiRouter.use(progresoRouter);
+  apiRouter.use(insigniasRouter);
 
   app.get('/', (_req, res) => {
     res.redirect(302, '/api/v1/docs');
