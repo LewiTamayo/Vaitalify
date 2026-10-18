@@ -1,6 +1,8 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  // Resuelve los include con JOIN en una sola consulta (ver docs/RENDIMIENTO.md, mejora 2).
+  previewFeatures = ["relationJoins"]
 }
 
 // Las URLs (DATABASE_URL con pooling en runtime, DIRECT_URL sin pooling para migraciones)

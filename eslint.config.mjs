@@ -12,6 +12,8 @@ export default tseslint.config(
       '.superpowers/**',
       // El front tiene su propia configuración (web/eslint.config.js).
       'web/**',
+      // Resultados y reportes HTML de JMeter (ignorados por git).
+      'tests/performance/resultados/**',
       'eslint.config.mjs',
     ],
   },

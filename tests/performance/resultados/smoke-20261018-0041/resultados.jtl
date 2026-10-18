@@ -1,0 +1,119 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1792302103420,512,POST /auth/login,200,OK,Usuarios 1-1,text,true,,1471,341,2,2,http://localhost:3000/api/v1/auth/login,512,0,17
+1792302105146,827,POST /auth/login,200,OK,Usuarios 1-2,text,true,,1471,341,3,3,http://localhost:3000/api/v1/auth/login,827,0,0
+1792302105345,814,GET /progreso/semanal,200,OK,Usuarios 1-1,text,true,,1171,411,3,3,http://localhost:3000/api/v1/progreso/semanal,814,0,0
+1792302107875,377,POST /auth/login,200,OK,Usuarios 1-3,text,true,,1471,341,4,4,http://localhost:3000/api/v1/auth/login,377,0,1
+1792302108488,179,GET /micro-pausas/hoy,200,OK,Usuarios 1-1,text,true,,1322,411,4,4,http://localhost:3000/api/v1/micro-pausas/hoy,179,0,0
+1792302108920,177,GET /micro-pausas/hoy,200,OK,Usuarios 1-2,text,true,,1734,411,4,4,http://localhost:3000/api/v1/micro-pausas/hoy,177,0,0
+1792302109175,371,POST /auth/login,200,OK,Usuarios 1-4,text,true,,1471,341,5,5,http://localhost:3000/api/v1/auth/login,371,0,0
+1792302109803,91,GET /sueno/recomendacion,200,OK,Usuarios 1-1,text,true,,1225,414,5,5,http://localhost:3000/api/v1/sueno/recomendacion,91,0,0
+1792302110528,0,PATCH /micro-pausas/{id},Non HTTP response code: java.net.URISyntaxException,Non HTTP response message: Illegal character in path at index 43: http://localhost:3000/api/v1/micro-pausas/${idPausa},Usuarios 1-3,text,false,"Test failed: code expected to equal /
+
+****** received  : [[[Non HTTP response code: java.net.URISyntaxException]]]
+
+****** comparison: [[[200                                                ]]]
+
+/",1204,0,5,5,http://localhost:3000/api/v1/micro-pausas/${idPausa},0,0,0
+1792302110786,371,POST /auth/login,200,OK,Usuarios 1-5,text,true,,1471,341,5,5,http://localhost:3000/api/v1/auth/login,371,0,1
+1792302111510,167,GET /progreso/semanal,200,OK,Usuarios 1-2,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,167,0,0
+1792302111757,0,PATCH /micro-pausas/{id},Non HTTP response code: java.net.URISyntaxException,Non HTTP response message: Illegal character in path at index 43: http://localhost:3000/api/v1/micro-pausas/${idPausa},Usuarios 1-4,text,false,"Test failed: code expected to equal /
+
+****** received  : [[[Non HTTP response code: java.net.URISyntaxException]]]
+
+****** comparison: [[[200                                                ]]]
+
+/",1204,0,5,5,http://localhost:3000/api/v1/micro-pausas/${idPausa},0,0,0
+1792302112875,181,GET /micro-pausas/hoy,200,OK,Usuarios 1-5,text,true,,2165,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,181,0,0
+1792302112257,1035,POST /registros-sueno,201,Created,Usuarios 1-1,text,true,,992,473,5,5,http://localhost:3000/api/v1/registros-sueno,1035,0,0
+1792302112739,1423,POST /bloques,201,Created,Usuarios 1-3,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1423,0,0
+1792302114502,177,GET /micro-pausas/hoy,200,OK,Usuarios 1-2,text,true,,1734,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,177,0,0
+1792302114934,172,GET /progreso/semanal,200,OK,Usuarios 1-5,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,172,0,0
+1792302114380,1393,POST /bloques,201,Created,Usuarios 1-4,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1393,0,0
+1792302115820,152,GET /micro-pausas/hoy,200,OK,Usuarios 1-1,text,true,,1322,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,152,0,0
+1792302115940,1395,DELETE /bloques/{id},204,No Content,Usuarios 1-3,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16178,0,0,0
+1792302117497,79,GET /sueno/recomendacion,200,OK,Usuarios 1-1,text,true,,1225,414,5,5,http://localhost:3000/api/v1/sueno/recomendacion,79,0,0
+1792302118390,161,GET /micro-pausas/hoy,200,OK,Usuarios 1-3,text,true,,1734,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,161,0,0
+1792302118082,551,GET /progreso/semanal,200,OK,Usuarios 1-5,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,551,0,0
+1792302117530,1905,PATCH /micro-pausas/{id},200,OK,Usuarios 1-2,text,true,,1394,452,5,5,http://localhost:3000/api/v1/micro-pausas/1115,1905,0,0
+1792302118504,1580,DELETE /bloques/{id},204,No Content,Usuarios 1-4,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16179,0,0,0
+1792302119999,168,GET /progreso/semanal,200,OK,Usuarios 1-5,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,168,0,0
+1792302119795,990,POST /registros-sueno,201,Created,Usuarios 1-1,text,true,,992,473,5,5,http://localhost:3000/api/v1/registros-sueno,990,0,0
+1792302121401,161,GET /micro-pausas/hoy,200,OK,Usuarios 1-3,text,true,,1734,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,161,0,0
+1792302121944,155,GET /progreso/semanal,200,OK,Usuarios 1-1,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,155,0,0
+1792302122693,167,GET /micro-pausas/hoy,200,OK,Usuarios 1-5,text,true,,2165,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,167,0,0
+1792302123077,0,PATCH /micro-pausas/{id},Non HTTP response code: java.net.URISyntaxException,Non HTTP response message: Illegal character in path at index 43: http://localhost:3000/api/v1/micro-pausas/${idPausa},Usuarios 1-4,text,false,"Test failed: code expected to equal /
+
+****** received  : [[[Non HTTP response code: java.net.URISyntaxException]]]
+
+****** comparison: [[[200                                                ]]]
+
+/",1204,0,5,5,http://localhost:3000/api/v1/micro-pausas/${idPausa},0,0,0
+1792302122295,1359,POST /bloques,201,Created,Usuarios 1-2,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1359,0,0
+1792302124137,155,GET /micro-pausas/hoy,200,OK,Usuarios 1-3,text,true,,1734,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,155,0,0
+1792302125249,80,GET /sueno/recomendacion,200,OK,Usuarios 1-5,text,true,,1225,414,5,5,http://localhost:3000/api/v1/sueno/recomendacion,80,0,0
+1792302125637,155,GET /micro-pausas/hoy,200,OK,Usuarios 1-3,text,true,,1734,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,155,0,0
+1792302123810,2173,PATCH /micro-pausas/{id},200,OK,Usuarios 1-1,text,true,"The operation lasted too long: It took 2,173 milliseconds, but should not have lasted longer than 2,000 milliseconds.",1394,452,5,5,http://localhost:3000/api/v1/micro-pausas/1118,2173,0,0
+1792302125153,1382,DELETE /bloques/{id},204,No Content,Usuarios 1-2,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16180,0,0,0
+1792302125254,1410,POST /bloques,201,Created,Usuarios 1-4,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1410,0,1
+1792302128062,186,GET /micro-pausas/hoy,200,OK,Usuarios 1-2,text,true,,1752,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,186,0,0
+1792302127628,1024,POST /registros-sueno,201,Created,Usuarios 1-5,text,true,,992,473,5,5,http://localhost:3000/api/v1/registros-sueno,1024,0,0
+1792302128480,574,GET /progreso/semanal,200,OK,Usuarios 1-3,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,574,0,0
+1792302127706,1453,POST /bloques,201,Created,Usuarios 1-1,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1453,0,0
+1792302128305,1570,DELETE /bloques/{id},204,No Content,Usuarios 1-4,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16181,0,0,0
+1792302130090,89,GET /sueno/recomendacion,200,OK,Usuarios 1-2,text,true,,1225,414,5,5,http://localhost:3000/api/v1/sueno/recomendacion,89,0,0
+1792302131888,168,GET /progreso/semanal,200,OK,Usuarios 1-3,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,168,0,0
+1792302132202,158,GET /micro-pausas/hoy,200,OK,Usuarios 1-4,text,true,,2165,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,157,0,0
+1792302131486,993,POST /registros-sueno,201,Created,Usuarios 1-2,text,true,,992,473,5,5,http://localhost:3000/api/v1/registros-sueno,993,0,0
+1792302130611,2206,PATCH /micro-pausas/{id},200,OK,Usuarios 1-5,text,true,"The operation lasted too long: It took 2,206 milliseconds, but should not have lasted longer than 2,000 milliseconds.",1394,452,5,5,http://localhost:3000/api/v1/micro-pausas/1142,2206,0,0
+1792302132048,1407,DELETE /bloques/{id},204,No Content,Usuarios 1-1,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16182,0,0,0
+1792302133334,176,GET /micro-pausas/hoy,200,OK,Usuarios 1-3,text,true,,1734,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,176,0,0
+1792302134721,170,GET /progreso/semanal,200,OK,Usuarios 1-4,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,170,0,0
+1792302135385,156,GET /micro-pausas/hoy,200,OK,Usuarios 1-1,text,true,,1340,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,156,0,0
+1792302134478,1652,POST /bloques,201,Created,Usuarios 1-5,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1652,0,0
+1792302136012,156,GET /progreso/semanal,200,OK,Usuarios 1-3,text,true,,1171,411,5,5,http://localhost:3000/api/v1/progreso/semanal,156,0,0
+1792302134926,1948,PATCH /micro-pausas/{id},200,OK,Usuarios 1-2,text,true,,1376,452,5,5,http://localhost:3000/api/v1/micro-pausas/1126,1948,0,0
+1792302137231,80,GET /sueno/recomendacion,200,OK,Usuarios 1-1,text,true,,1225,414,5,5,http://localhost:3000/api/v1/sueno/recomendacion,80,0,0
+1792302137642,172,GET /micro-pausas/hoy,200,OK,Usuarios 1-4,text,true,,2165,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,172,0,0
+1792302137666,1301,DELETE /bloques/{id},204,No Content,Usuarios 1-5,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16183,0,0,0
+1792302137271,1905,PATCH /micro-pausas/{id},200,OK,Usuarios 1-3,text,true,,1394,452,5,5,http://localhost:3000/api/v1/micro-pausas/1121,1905,0,0
+1792302138535,1019,POST /registros-sueno,201,Created,Usuarios 1-1,text,true,,992,473,5,5,http://localhost:3000/api/v1/registros-sueno,1019,0,0
+1792302139039,1283,POST /bloques,201,Created,Usuarios 1-2,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1283,0,0
+1792302140245,157,GET /micro-pausas/hoy,200,OK,Usuarios 1-4,text,true,,2165,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,157,0,0
+1792302140402,155,GET /progreso/semanal,200,OK,Usuarios 1-5,text,true,,1173,411,5,5,http://localhost:3000/api/v1/progreso/semanal,155,0,0
+1792302141750,171,GET /micro-pausas/hoy,200,OK,Usuarios 1-1,text,true,,1340,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,171,0,0
+1792302142319,173,GET /progreso/semanal,200,OK,Usuarios 1-5,text,true,,1173,411,5,5,http://localhost:3000/api/v1/progreso/semanal,173,0,0
+1792302141661,1401,DELETE /bloques/{id},204,No Content,Usuarios 1-2,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16184,0,0,0
+1792302143091,78,GET /sueno/recomendacion,200,OK,Usuarios 1-1,text,true,,1225,414,5,5,http://localhost:3000/api/v1/sueno/recomendacion,78,0,0
+1792302142109,1589,POST /bloques,201,Created,Usuarios 1-3,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1589,0,0
+1792302143692,155,GET /micro-pausas/hoy,200,OK,Usuarios 1-5,text,true,,2183,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,155,0,0
+1792302144402,179,GET /micro-pausas/hoy,200,OK,Usuarios 1-2,text,true,,1770,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,179,0,0
+1792302143206,1953,PATCH /micro-pausas/{id},200,OK,Usuarios 1-4,text,true,,1376,452,5,5,http://localhost:3000/api/v1/micro-pausas/1130,1953,0,0
+1792302145600,165,GET /progreso/semanal,200,OK,Usuarios 1-5,text,true,,1173,411,5,5,http://localhost:3000/api/v1/progreso/semanal,165,0,0
+1792302144818,1141,POST /registros-sueno,201,Created,Usuarios 1-1,text,true,,992,473,5,5,http://localhost:3000/api/v1/registros-sueno,1141,0,0
+1792302146992,159,GET /micro-pausas/hoy,200,OK,Usuarios 1-5,text,true,,2183,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,159,0,0
+1792302146401,1380,DELETE /bloques/{id},204,No Content,Usuarios 1-3,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16185,0,0,0
+1792302147970,161,GET /progreso/semanal,200,OK,Usuarios 1-1,text,true,,1206,411,5,5,http://localhost:3000/api/v1/progreso/semanal,161,0,0
+1792302146259,2089,PATCH /micro-pausas/{id},200,OK,Usuarios 1-2,text,true,"The operation lasted too long: It took 2,089 milliseconds, but should not have lasted longer than 2,000 milliseconds.",1375,452,5,5,http://localhost:3000/api/v1/micro-pausas/1126,2089,0,0
+1792302148002,1216,POST /bloques,201,Created,Usuarios 1-4,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1216,0,0
+1792302149290,161,GET /micro-pausas/hoy,200,OK,Usuarios 1-3,text,true,,1752,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,161,0,0
+1792302149414,83,GET /sueno/recomendacion,200,OK,Usuarios 1-5,text,true,,1225,414,5,5,http://localhost:3000/api/v1/sueno/recomendacion,83,0,0
+1792302149591,1363,POST /bloques,201,Created,Usuarios 1-2,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1363,0,0
+1792302152073,160,GET /micro-pausas/hoy,200,OK,Usuarios 1-3,text,true,,1752,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,160,0,0
+1792302151719,1215,DELETE /bloques/{id},204,No Content,Usuarios 1-4,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16186,0,0,0
+1792302152070,1004,POST /registros-sueno,201,Created,Usuarios 1-5,text,true,,992,473,5,5,http://localhost:3000/api/v1/registros-sueno,1003,0,0
+1792302151038,2096,PATCH /micro-pausas/{id},200,OK,Usuarios 1-1,text,true,"The operation lasted too long: It took 2,096 milliseconds, but should not have lasted longer than 2,000 milliseconds.",1393,452,5,5,http://localhost:3000/api/v1/micro-pausas/1118,2096,0,0
+1792302152133,1396,DELETE /bloques/{id},204,No Content,Usuarios 1-2,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16187,0,0,0
+1792302154134,158,GET /micro-pausas/hoy,200,OK,Usuarios 1-4,text,true,,2183,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,158,0,0
+1792302155203,552,GET /progreso/semanal,200,OK,Usuarios 1-3,text,true,,1173,411,5,5,http://localhost:3000/api/v1/progreso/semanal,552,0,0
+1792302155602,177,GET /progreso/semanal,200,OK,Usuarios 1-2,text,true,,1173,411,5,5,http://localhost:3000/api/v1/progreso/semanal,177,0,0
+1792302154417,1394,POST /bloques,201,Created,Usuarios 1-1,text,true,,1059,519,5,5,http://localhost:3000/api/v1/bloques,1394,0,0
+1792302156296,87,GET /sueno/recomendacion,200,OK,Usuarios 1-4,text,true,,1225,414,5,5,http://localhost:3000/api/v1/sueno/recomendacion,87,0,0
+1792302154838,1900,PATCH /micro-pausas/{id},200,OK,Usuarios 1-5,text,true,,1376,452,5,5,http://localhost:3000/api/v1/micro-pausas/1132,1900,0,0
+1792302157286,175,GET /micro-pausas/hoy,200,OK,Usuarios 1-3,text,true,,1752,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,175,0,0
+1792302156902,1367,DELETE /bloques/{id},204,No Content,Usuarios 1-1,,true,,788,430,5,5,http://localhost:3000/api/v1/bloques/16188,0,0,0
+1792302158515,165,GET /micro-pausas/hoy,200,OK,Usuarios 1-2,text,true,,1770,411,5,5,http://localhost:3000/api/v1/micro-pausas/hoy,165,0,0
+1792302159316,171,GET /progreso/semanal,200,OK,Usuarios 1-3,text,true,,1173,411,4,4,http://localhost:3000/api/v1/progreso/semanal,171,0,0
+1792302159128,1126,POST /registros-sueno,201,Created,Usuarios 1-4,text,true,,992,473,4,4,http://localhost:3000/api/v1/registros-sueno,1126,0,0
+1792302160819,167,GET /progreso/semanal,200,OK,Usuarios 1-3,text,true,,1173,411,3,3,http://localhost:3000/api/v1/progreso/semanal,167,0,0
+1792302159584,1410,POST /bloques,201,Created,Usuarios 1-5,text,true,,1059,519,2,2,http://localhost:3000/api/v1/bloques,1410,0,0
+1792302161010,1864,PATCH /micro-pausas/{id},200,OK,Usuarios 1-1,text,true,,1393,452,1,1,http://localhost:3000/api/v1/micro-pausas/1118,1864,0,0

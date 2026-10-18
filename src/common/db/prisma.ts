@@ -12,9 +12,10 @@ const TIMEOUT_CONEXION_MS = 5000;
 export function crearCliente(
   connectionString: string,
   connectionTimeoutMillis = TIMEOUT_CONEXION_MS,
+  max = env.DB_POOL_MAX,
 ): PrismaClient {
   return new PrismaClient({
-    adapter: new PrismaPg({ connectionString, connectionTimeoutMillis }),
+    adapter: new PrismaPg({ connectionString, connectionTimeoutMillis, max }),
   });
 }
 
