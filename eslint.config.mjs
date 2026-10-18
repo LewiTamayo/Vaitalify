@@ -10,6 +10,8 @@ export default tseslint.config(
       'reports/**',
       'node_modules/**',
       '.superpowers/**',
+      // El front tiene su propia configuración (web/eslint.config.js).
+      'web/**',
       'eslint.config.mjs',
     ],
   },
