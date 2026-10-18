@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon';
 import { z } from 'zod';
+// Registra la extensión .openapi() de Zod antes de que otros módulos la usen sobre FechaSchema.
+import '../openapi/registry.js';
 
 // Fechas del usuario: "YYYY-MM-DD" locales (sin zona). "Hoy" siempre se calcula en APP_TZ
 // porque Vercel corre en UTC (entre 19:00 y 23:59 de Bogotá, UTC ya es el día siguiente).
@@ -59,3 +61,15 @@ export const FechaSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida: usa el formato YYYY-MM-DD')
   .refine((fecha) => DateTime.fromISO(fecha, { zone: 'utc' }).isValid, 'La fecha no existe');
+
+// Filtro de Prisma para columnas @db.Date con un rango opcional de fechas locales.
+export function filtroFechas(
+  desde?: string,
+  hasta?: string,
+): { gte?: Date; lte?: Date } | undefined {
+  if (!desde && !hasta) return undefined;
+  return {
+    gte: desde ? parseFecha(desde) : undefined,
+    lte: hasta ? parseFecha(hasta) : undefined,
+  };
+}

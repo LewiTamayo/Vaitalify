@@ -1,6 +1,6 @@
 import { conBloqueoVentanas, type Tx } from '../../common/db/bloqueos.js';
 import { prisma, type Prisma } from '../../common/db/prisma.js';
-import { formatFecha, parseFecha } from '../../common/utils/dates.js';
+import { formatFecha, filtroFechas, parseFecha } from '../../common/utils/dates.js';
 import { aSkipTake } from '../../common/utils/pagination.js';
 import { formatHHmm, parseHHmm } from '../../common/utils/time.js';
 import type {
@@ -98,14 +98,6 @@ const INCLUIR = {
     },
   },
 } satisfies Prisma.MicroVentanaInclude;
-
-function filtroFechas(desde?: string, hasta?: string): Prisma.DateTimeFilter | undefined {
-  if (!desde && !hasta) return undefined;
-  return {
-    gte: desde ? parseFecha(desde) : undefined,
-    lte: hasta ? parseFecha(hasta) : undefined,
-  };
-}
 
 function filtroPausa(conPausa?: boolean): Prisma.MicroVentanaWhereInput {
   if (conPausa === undefined) return {};

@@ -16,6 +16,8 @@ import { RUTA_IMPORTAR, bloquesRouter } from './modules/bloques/bloques.routes.j
 import { microPausasRouter } from './modules/micro-pausas/micro-pausas.routes.js';
 import { microVentanasRouter } from './modules/micro-ventanas/micro-ventanas.routes.js';
 import { perfilRouter } from './modules/perfil/perfil.routes.js';
+import { registrosSuenoRouter } from './modules/registros-sueno/registros-sueno.routes.js';
+import { suenoRouter } from './modules/sueno/sueno.routes.js';
 import { crearUsuariosRouter } from './modules/usuarios/usuarios.routes.js';
 
 export interface OpcionesApp {
@@ -55,6 +57,8 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   apiRouter.use(actividadesRouter);
   apiRouter.use(microVentanasRouter);
   apiRouter.use(microPausasRouter);
+  apiRouter.use(registrosSuenoRouter);
+  apiRouter.use(suenoRouter);
 
   app.get('/', (_req, res) => {
     res.redirect(302, '/api/v1/docs');

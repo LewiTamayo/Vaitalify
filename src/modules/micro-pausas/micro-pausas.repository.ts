@@ -1,6 +1,6 @@
 import { conBloqueoVentanas } from '../../common/db/bloqueos.js';
 import { prisma, type EstadoMicroPausa, type Prisma } from '../../common/db/prisma.js';
-import { parseFecha } from '../../common/utils/dates.js';
+import { filtroFechas, parseFecha } from '../../common/utils/dates.js';
 import { aSkipTake } from '../../common/utils/pagination.js';
 import type { FiltrosPausas } from './micro-pausas.schemas.js';
 
@@ -46,14 +46,6 @@ export async function ultimaActividad(idUsuario: number): Promise<number | null>
 
 export function buscar(idUsuario: number, idPausa: number) {
   return prisma.microPausa.findFirst({ where: propia(idUsuario, idPausa), include: INCLUIR });
-}
-
-function filtroFechas(desde?: string, hasta?: string): Prisma.DateTimeFilter | undefined {
-  if (!desde && !hasta) return undefined;
-  return {
-    gte: desde ? parseFecha(desde) : undefined,
-    lte: hasta ? parseFecha(hasta) : undefined,
-  };
 }
 
 export async function listar(idUsuario: number, filtros: FiltrosPausas) {
