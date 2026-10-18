@@ -1,3 +1,4 @@
+import { conBloqueoVentanas, type Tx } from '../../common/db/bloqueos.js';
 import { prisma, type Prisma } from '../../common/db/prisma.js';
 import { formatFecha, parseFecha } from '../../common/utils/dates.js';
 import { aSkipTake } from '../../common/utils/pagination.js';
@@ -13,13 +14,15 @@ const minutos = (d: Date) => d.getUTCHours() * 60 + d.getUTCMinutes();
 
 // Lectura del horario del usuario (perfil + bloques). Solo lectura: se consulta aquí para no
 // crear un ciclo de imports entre los servicios de bloques/perfil y el de micro-ventanas.
-export async function cargarHorario(idUsuario: number) {
+export const conBloqueo = conBloqueoVentanas;
+
+export async function cargarHorario(idUsuario: number, db: Tx = prisma) {
   const [perfil, bloques] = await Promise.all([
-    prisma.perfilHabitos.findUnique({
+    db.perfilHabitos.findUnique({
       where: { idUsuario },
       select: { horaDespertar: true, horaDormir: true },
     }),
-    prisma.bloqueHorario.findMany({
+    db.bloqueHorario.findMany({
       where: { idUsuario },
       select: { diaSemana: true, horaInicio: true, horaFin: true },
     }),
@@ -43,8 +46,9 @@ export async function existentes(
   idUsuario: number,
   desde: string,
   hasta: string,
+  db: Tx = prisma,
 ): Promise<VentanaExistente[]> {
-  const filas = await prisma.microVentana.findMany({
+  const filas = await db.microVentana.findMany({
     where: { idUsuario, fecha: { gte: parseFecha(desde), lte: parseFecha(hasta) } },
     include: {
       microPausa: { select: { estado: true, actividad: { select: { duracionMin: true } } } },
@@ -69,17 +73,20 @@ const aFila = (idUsuario: number, v: VentanaCalculada) => ({
   duracionMin: v.duracionMin,
 });
 
-export async function aplicar(idUsuario: number, plan: PlanReconciliacion): Promise<void> {
-  await prisma.$transaction([
-    prisma.microVentana.deleteMany({ where: { idUsuario, idVentana: { in: plan.eliminar } } }),
-    prisma.microVentana.createMany({
+// Se ejecuta dentro de la transacción con bloqueo (conBloqueo).
+export async function aplicar(idUsuario: number, plan: PlanReconciliacion, db: Tx): Promise<void> {
+  if (plan.eliminar.length > 0) {
+    await db.microVentana.deleteMany({ where: { idUsuario, idVentana: { in: plan.eliminar } } });
+  }
+  if (plan.crear.length > 0) {
+    await db.microVentana.createMany({
       data: plan.crear.map((v) => aFila(idUsuario, v)),
       skipDuplicates: true,
-    }),
-    ...plan.actualizarDuracion.map(({ idVentana, duracionMin }) =>
-      prisma.microVentana.updateMany({ where: { idVentana, idUsuario }, data: { duracionMin } }),
-    ),
-  ]);
+    });
+  }
+  for (const { idVentana, duracionMin } of plan.actualizarDuracion) {
+    await db.microVentana.updateMany({ where: { idVentana, idUsuario }, data: { duracionMin } });
+  }
 }
 
 const INCLUIR = {

@@ -1,3 +1,4 @@
+import { conBloqueoVentanas } from '../../common/db/bloqueos.js';
 import { prisma, type EstadoMicroPausa, type Prisma } from '../../common/db/prisma.js';
 import { parseFecha } from '../../common/utils/dates.js';
 import { aSkipTake } from '../../common/utils/pagination.js';
@@ -15,8 +16,23 @@ const propia = (idUsuario: number, idPausa: number): Prisma.MicroPausaWhereInput
   ventana: { idUsuario },
 });
 
-export function crear(idVentana: number, idActividad: number) {
-  return prisma.microPausa.create({ data: { idVentana, idActividad } });
+export type ResultadoCrear = { idPausa: number } | 'sin-ventana' | 'no-cabe';
+
+// Con el mismo bloqueo que el recálculo: la ventana se vuelve a leer dentro de la transacción,
+// así no se asigna una pausa a una ventana que otro recálculo acaba de borrar o acortar.
+export function crear(
+  idUsuario: number,
+  idVentana: number,
+  idActividad: number,
+  duracionActividad: number,
+): Promise<ResultadoCrear> {
+  return conBloqueoVentanas(idUsuario, async (tx) => {
+    const ventana = await tx.microVentana.findFirst({ where: { idVentana, idUsuario } });
+    if (!ventana) return 'sin-ventana';
+    if (ventana.duracionMin < duracionActividad) return 'no-cabe';
+    const { idPausa } = await tx.microPausa.create({ data: { idVentana, idActividad } });
+    return { idPausa };
+  });
 }
 
 export async function ultimaActividad(idUsuario: number): Promise<number | null> {

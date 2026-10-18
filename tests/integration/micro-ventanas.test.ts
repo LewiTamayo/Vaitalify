@@ -96,6 +96,26 @@ describe('recálculo automático al cambiar el horario (RNF-03)', () => {
   });
 });
 
+describe('concurrencia', () => {
+  it('varios bloques creados a la vez dejan las ventanas coherentes con el horario final', async () => {
+    const s = await usuarioConPerfil();
+    await Promise.all([
+      crearBloque(s, '06:00', '08:00'),
+      crearBloque(s, '08:30', '12:00'),
+      crearBloque(s, '12:30', '18:00'),
+      crearBloque(s, '18:20', '23:00'),
+    ]);
+    // Si algún recálculo hubiera aplicado un plan obsoleto, este encontraría algo que corregir.
+    const res = await recalcular(s, { desde: HOY, hasta: HOY });
+    expect(res.body).toMatchObject({ generadas: 0, eliminadas: 0 });
+    expect((await ventanasDe(s)).data.map((v) => v.horaInicio)).toEqual([
+      '08:00',
+      '12:00',
+      '18:00',
+    ]);
+  });
+});
+
 describe('/micro-ventanas/:id', () => {
   it('detalle propio (200), ajeno (404) y descarte (204)', async () => {
     const a = await usuarioConPerfil();

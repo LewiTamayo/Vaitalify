@@ -106,3 +106,39 @@ describe('Idempotency-Key en PATCH /micro-pausas/:id', () => {
     expect(otra.headers['idempotent-replayed']).toBeUndefined();
   });
 });
+
+describe('Idempotency-Key: concurrencia y cuerpo distinto', () => {
+  it('dos peticiones idénticas simultáneas: el cambio se ejecuta una sola vez', async () => {
+    const { s, ids } = await dosPausas();
+    const clave = randomUUID();
+    const respuestas = await Promise.all([marcar(s, ids[0]!, clave), marcar(s, ids[0]!, clave)]);
+    for (const r of respuestas) expect([200, 409]).toContain(r.status);
+    const ejecutadas = respuestas.filter(
+      (r) => r.status === 200 && r.headers['idempotent-replayed'] === undefined,
+    );
+    expect(ejecutadas).toHaveLength(1);
+  });
+
+  it('la misma clave con otro cuerpo → 422 (no devuelve la respuesta vieja)', async () => {
+    const { s, ids } = await dosPausas();
+    const clave = randomUUID();
+    expect((await marcar(s, ids[0]!, clave)).status).toBe(200);
+    const otra = await request(app)
+      .patch(`/api/v1/micro-pausas/${ids[0]}`)
+      .set(...bearer(s))
+      .set('Idempotency-Key', clave)
+      .send({ estado: 'omitida' });
+    expect(otra.status).toBe(422);
+  });
+
+  it('una respuesta de error no se guarda: se puede reintentar con la misma clave', async () => {
+    const { s, ids } = await dosPausas();
+    const clave = randomUUID();
+    const mala = await request(app)
+      .patch(`/api/v1/micro-pausas/${ids[0]}`)
+      .set(...bearer(s))
+      .set('Idempotency-Key', clave)
+      .send({ estado: 'cancelada' });
+    expect(mala.status).toBe(400);
+  });
+});

@@ -1,4 +1,4 @@
-import { esUnicoViolado } from '../../common/db/errores-prisma.js';
+import { esFkViolada, esUnicoViolado } from '../../common/db/errores-prisma.js';
 import { errores } from '../../common/errors/app-error.js';
 import { formatFecha, hoyEnZona } from '../../common/utils/dates.js';
 import { pagina, type Pagina } from '../../common/utils/pagination.js';
@@ -13,6 +13,12 @@ import { recomendarActividad } from './recomendacion.domain.js';
 const noEncontrada = () => errores.noEncontrado('La micro-pausa no existe');
 const yaTienePausa = () => errores.conflicto('La micro-ventana ya tiene una micro-pausa asignada');
 const noCabe = () => errores.reglaNegocio('La actividad no cabe en la micro-ventana');
+const ventanaNoExiste = () => errores.noEncontrado('La micro-ventana no existe');
+
+interface Elegida {
+  idActividad: number;
+  duracionMin: number;
+}
 
 export function aDto(p: repo.FilaPausa): MicroPausaDto {
   return {
@@ -35,22 +41,45 @@ async function obtenerFila(idUsuario: number, idPausa: number): Promise<repo.Fil
   return pausa;
 }
 
-async function actividadQueCabe(idActividad: number, duracionVentana: number): Promise<number> {
+async function actividadQueCabe(idActividad: number, duracionVentana: number): Promise<Elegida> {
   const actividad = await actividades.obtener(idActividad);
   if (actividad.duracionMin > duracionVentana) throw noCabe();
-  return actividad.idActividad;
+  return actividad;
 }
 
-async function elegirActividad(idUsuario: number, duracionVentana: number, rng: Rng) {
+async function elegirActividad(
+  idUsuario: number,
+  duracionVentana: number,
+  rng: Rng,
+): Promise<Elegida> {
   const [candidatas, ultima] = await Promise.all([
     actividades.candidatas(duracionVentana),
     repo.ultimaActividad(idUsuario),
   ]);
   const elegida = recomendarActividad(candidatas, duracionVentana, ultima, rng);
-  if (elegida === null) {
+  const actividad = candidatas.find((c) => c.idActividad === elegida);
+  if (!actividad) {
     throw errores.reglaNegocio('No hay actividades que quepan en esta micro-ventana');
   }
-  return elegida;
+  return actividad;
+}
+
+async function insertar(idUsuario: number, idVentana: number, elegida: Elegida): Promise<number> {
+  try {
+    const resultado = await repo.crear(
+      idUsuario,
+      idVentana,
+      elegida.idActividad,
+      elegida.duracionMin,
+    );
+    if (resultado === 'sin-ventana') throw ventanaNoExiste();
+    if (resultado === 'no-cabe') throw noCabe();
+    return resultado.idPausa;
+  } catch (error) {
+    if (esUnicoViolado(error)) throw yaTienePausa();
+    if (esFkViolada(error)) throw ventanaNoExiste();
+    throw error;
+  }
 }
 
 // RF-05 / §7.2: recomienda (o asigna la forzada) una actividad para la micro-ventana.
@@ -66,13 +95,8 @@ export async function recomendar(
     idActividad === undefined
       ? await elegirActividad(idUsuario, ventana.duracionMin, rng)
       : await actividadQueCabe(idActividad, ventana.duracionMin);
-  try {
-    const { idPausa } = await repo.crear(idVentana, elegida);
-    return aDto(await obtenerFila(idUsuario, idPausa));
-  } catch (error) {
-    if (esUnicoViolado(error)) throw yaTienePausa();
-    throw error;
-  }
+  const idPausa = await insertar(idUsuario, idVentana, elegida);
+  return aDto(await obtenerFila(idUsuario, idPausa));
 }
 
 export async function listar(
@@ -120,7 +144,9 @@ export async function cambiarActividad(
     throw errores.reglaNegocio('Solo se puede cambiar la actividad de una micro-pausa pendiente');
   }
   const elegida = await actividadQueCabe(idActividad, pausa.ventana.duracionMin);
-  const actualizada = await repo.actualizar(idUsuario, idPausa, { idActividad: elegida });
+  const actualizada = await repo.actualizar(idUsuario, idPausa, {
+    idActividad: elegida.idActividad,
+  });
   if (!actualizada) throw noEncontrada();
   return aDto(actualizada);
 }

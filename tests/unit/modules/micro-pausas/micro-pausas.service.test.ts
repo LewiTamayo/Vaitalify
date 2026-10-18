@@ -44,11 +44,24 @@ describe('recomendar', () => {
     repo.buscar.mockResolvedValue(null);
     await servicio.recomendar(7, 1, undefined, crearRng(1)).catch(() => undefined);
     expect(actividades.candidatas).toHaveBeenCalledWith(5);
-    expect(repo.crear).toHaveBeenCalledWith(1, 2);
+    expect(repo.crear).toHaveBeenCalledWith(7, 1, 2, 5);
   });
 
   it('la ventana ya tiene micro-pausa → 409', async () => {
     ventanas.obtener.mockResolvedValue({ ...ventana5, microPausa: { idPausa: 3 } });
     await expect(servicio.recomendar(7, 1)).rejects.toMatchObject({ status: 409 });
+  });
+});
+
+describe('recomendar: carreras con el recálculo', () => {
+  it('si la ventana se borra antes de insertar (P2003) → 404, no 500', async () => {
+    const { Prisma } = await import('../../../../src/common/db/prisma.js');
+    actividades.candidatas.mockResolvedValue([{ idActividad: 1, duracionMin: 5 }]);
+    repo.crear.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('fk', { code: 'P2003', clientVersion: 'test' }),
+    );
+    await expect(servicio.recomendar(7, 1, undefined, crearRng(1))).rejects.toMatchObject({
+      status: 404,
+    });
   });
 });

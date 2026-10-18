@@ -1,4 +1,5 @@
 import { errores } from '../../common/errors/app-error.js';
+import { logger } from '../../common/logger.js';
 import {
   diasEntre,
   formatFecha,
@@ -60,38 +61,57 @@ function calcular(horario: repo.Horario, fechas: string[]): VentanaCalculada[] {
   });
 }
 
-async function reconciliar(
+type Fechas = { desde: string; hasta: string };
+
+// Lee el horario y las ventanas existentes DENTRO del bloqueo por usuario: dos recálculos
+// simultáneos (p. ej. dos POST /bloques seguidos) no pueden aplicar planes obsoletos.
+// sinPerfilHacer decide qué hacer si el usuario aún no tiene perfil.
+function reconciliar(
   idUsuario: number,
-  horario: repo.Horario,
-  { desde, hasta }: { desde: string; hasta: string },
+  { desde, hasta }: Fechas,
+  sinPerfilHacer: () => ResultadoRecalculo,
 ): Promise<ResultadoRecalculo> {
-  const plan = planificarReconciliacion(
-    await repo.existentes(idUsuario, desde, hasta),
-    calcular(horario, rangoFechas(desde, hasta)),
-  );
-  await repo.aplicar(idUsuario, plan);
-  return {
-    generadas: plan.crear.length,
-    eliminadas: plan.eliminar.length,
-    conservadas: plan.conservadas,
-  };
+  return repo.conBloqueo(idUsuario, async (tx) => {
+    const horario = await repo.cargarHorario(idUsuario, tx);
+    if (!horario.perfil) return sinPerfilHacer();
+    const plan = planificarReconciliacion(
+      await repo.existentes(idUsuario, desde, hasta, tx),
+      calcular(horario, rangoFechas(desde, hasta)),
+    );
+    await repo.aplicar(idUsuario, plan, tx);
+    return {
+      generadas: plan.crear.length,
+      eliminadas: plan.eliminar.length,
+      conservadas: plan.conservadas,
+    };
+  });
 }
 
-export async function recalcular(
+const SIN_CAMBIOS: ResultadoRecalculo = { generadas: 0, eliminadas: 0, conservadas: 0 };
+
+export function recalcular(
   idUsuario: number,
   rango: RangoRecalculo = {},
 ): Promise<ResultadoRecalculo> {
-  const fechas = resolverRango(rango);
-  const horario = await repo.cargarHorario(idUsuario);
-  if (!horario.perfil) throw sinPerfil();
-  return reconciliar(idUsuario, horario, fechas);
+  return reconciliar(idUsuario, resolverRango(rango), () => {
+    throw sinPerfil();
+  });
 }
 
 // Tras cualquier cambio en bloques o perfil (RNF-03). Sin perfil no hay día despierto: se omite.
 export async function recalcularSemana(idUsuario: number): Promise<void> {
-  const horario = await repo.cargarHorario(idUsuario);
-  if (!horario.perfil) return;
-  await reconciliar(idUsuario, horario, resolverRango({}));
+  await reconciliar(idUsuario, resolverRango({}), () => SIN_CAMBIOS);
+}
+
+// Variante para los hooks de bloques/perfil: el cambio del usuario ya se guardó y las ventanas
+// son datos derivados (el próximo recálculo las repara). Un fallo aquí no debe convertir la
+// operación en un 500, porque el cliente reintentaría y duplicaría el bloque.
+export async function recalcularSemanaSinFallar(idUsuario: number): Promise<void> {
+  try {
+    await recalcularSemana(idUsuario);
+  } catch (err) {
+    logger.error({ err, idUsuario }, 'No se pudieron recalcular las micro-ventanas');
+  }
 }
 
 export function aDto(v: repo.FilaVentana): MicroVentanaDto {
