@@ -1,6 +1,7 @@
 import { esNoEncontrado, esUnicoViolado } from '../../common/db/errores-prisma.js';
 import { errores } from '../../common/errors/app-error.js';
 import { formatHHmm } from '../../common/utils/time.js';
+import { regenerarSinFallar } from '../recordatorios/recordatorios.service.js';
 import * as repo from './config-notificaciones.repository.js';
 import type { ConfigDto, DatosConfig, Tipo } from './config-notificaciones.schemas.js';
 
@@ -29,7 +30,9 @@ export async function obtener(idUsuario: number, tipo: Tipo): Promise<ConfigDto>
 
 export async function crear(idUsuario: number, tipo: Tipo, datos: DatosConfig): Promise<ConfigDto> {
   try {
-    return aDto(await repo.crear(idUsuario, tipo, datos));
+    const config = aDto(await repo.crear(idUsuario, tipo, datos));
+    await regenerarSinFallar(idUsuario);
+    return config;
   } catch (error) {
     if (esUnicoViolado(error)) {
       throw errores.conflicto('Ya existe la configuración de ese tipo; usa PUT');
@@ -44,7 +47,10 @@ export async function reemplazar(
   datos: DatosConfig,
 ): Promise<ConfigDto> {
   try {
-    return aDto(await repo.actualizar(idUsuario, tipo, datos));
+    const config = aDto(await repo.actualizar(idUsuario, tipo, datos));
+    // Los recordatorios de hoy se rehacen con la nueva configuración (activo / silencio).
+    await regenerarSinFallar(idUsuario);
+    return config;
   } catch (error) {
     if (esNoEncontrado(error)) throw noEncontrada();
     throw error;
@@ -54,9 +60,5 @@ export async function reemplazar(
 // DELETE restablece los valores por defecto (activa, sin silencio).
 export async function restablecer(idUsuario: number, tipo: Tipo): Promise<void> {
   await repo.restablecer(idUsuario, tipo);
-}
-
-// Para la generación de recordatorios.
-export function configsDe(idUsuario: number): Promise<ConfigDto[]> {
-  return listar(idUsuario);
+  await regenerarSinFallar(idUsuario);
 }

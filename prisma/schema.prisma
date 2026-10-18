@@ -158,6 +158,7 @@ model Recordatorio {
   enviado        Boolean          @default(false)
   usuario        Usuario          @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
 
+  @@unique([idUsuario, tipo, fechaHoraEnvio]) // + clave natural: generación idempotente (§7.7)
   @@index([enviado, fechaHoraEnvio])
   @@map("recordatorio")
 }
