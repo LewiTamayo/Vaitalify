@@ -26,6 +26,13 @@ describe('parseEnv', () => {
     expect(env.RATE_LIMIT_ENABLED).toBe(true);
   });
 
+  it('DB_POOL_MAX: 10 conexiones por defecto, configurable entre 1 y 100', () => {
+    expect(parseEnv(base).DB_POOL_MAX).toBe(10);
+    expect(parseEnv({ ...base, DB_POOL_MAX: '40' }).DB_POOL_MAX).toBe(40);
+    expect(() => parseEnv({ ...base, DB_POOL_MAX: '0' })).toThrow(/DB_POOL_MAX/);
+    expect(() => parseEnv({ ...base, DB_POOL_MAX: '101' })).toThrow(/DB_POOL_MAX/);
+  });
+
   it('usa DATABASE_URL_UNPOOLED como DIRECT_URL (Neon Marketplace)', () => {
     const env = parseEnv({
       ...base,

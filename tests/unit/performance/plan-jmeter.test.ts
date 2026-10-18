@@ -72,6 +72,12 @@ describe('plan vitalify.jmx (§19.4)', () => {
     expect(jmx).toContain('OnceOnlyController');
   });
 
+  it('si el login falla, el hilo se detiene en vez de seguir enviando peticiones sin token', () => {
+    expect(jmx).toMatch(
+      /IfController[^>]*testname="Si el login falló"[\s\S]*?accessToken[\s\S]*?NONE[\s\S]*?<TestAction[\s\S]*?ActionProcessor\.action">0</,
+    );
+  });
+
   it('mezcla con Throughput Controllers 30/20/15/10/10/15', () => {
     const porcentajes = [
       ...jmx.matchAll(

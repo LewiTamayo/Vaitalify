@@ -19,6 +19,8 @@ const esquema = z.object({
   JWT_ACCESS_TTL: z.string().min(1).default('15m'),
   JWT_REFRESH_TTL: z.string().min(1).default('7d'),
   BCRYPT_COST: z.coerce.number().int().min(10).max(14).default(12),
+  // Conexiones del pool de pg por instancia (10 = default de pg). Ver docs/RENDIMIENTO.md.
+  DB_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
   CORS_ORIGINS: z
     .string()
     .default('')

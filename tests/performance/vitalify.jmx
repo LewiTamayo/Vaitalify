@@ -155,6 +155,20 @@
             </JSONPostProcessor>
             <hashTree/>
           </hashTree>
+          <!-- Sin token, cada petición del hilo sería un 401 que no mide nada: el login fallido ya quedó registrado. -->
+          <IfController guiclass="IfControllerPanel" testclass="IfController" testname="Si el login falló">
+            <stringProp name="IfController.condition">${__jexl3(&quot;${accessToken}&quot; == &quot;NONE&quot;)}</stringProp>
+            <boolProp name="IfController.evaluateAll">false</boolProp>
+            <boolProp name="IfController.useExpression">true</boolProp>
+          </IfController>
+          <hashTree>
+            <TestAction guiclass="TestActionGui" testclass="TestAction" testname="Detener el hilo">
+              <intProp name="ActionProcessor.action">0</intProp>
+              <intProp name="ActionProcessor.target">0</intProp>
+              <stringProp name="ActionProcessor.duration">0</stringProp>
+            </TestAction>
+            <hashTree/>
+          </hashTree>
         </hashTree>
         <ThroughputController guiclass="ThroughputControllerGui" testclass="ThroughputController" testname="30 % pausas de hoy">
           <intProp name="ThroughputController.style">1</intProp>
