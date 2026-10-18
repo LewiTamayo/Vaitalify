@@ -57,6 +57,8 @@ async function enviar(ruta: string, { metodo = 'GET', cuerpo, sinAuth }: Opcione
 // Una sola renovación en vuelo, compartida por todas las peticiones que reciban 401.
 let renovacion: Promise<boolean> | null = null;
 
+// true = sesión renovada; false = la API la rechazó (401/400: el refresh token ya no sirve).
+// Fallos transitorios (red, 429, 5xx) lanzan ErrorApi y conservan el refresh token.
 async function renovarSesion(): Promise<boolean> {
   const refreshToken = tokenRefresh();
   if (!refreshToken) return false;
@@ -64,8 +66,9 @@ async function renovarSesion(): Promise<boolean> {
     metodo: 'POST',
     cuerpo: { refreshToken },
     sinAuth: true,
-  }).catch(() => null);
-  if (!respuesta?.ok) return false;
+  });
+  if (respuesta.status === 400 || respuesta.status === 401) return false;
+  if (!respuesta.ok) throw await aError(respuesta);
   guardarSesion((await respuesta.json()) as Sesion);
   return true;
 }
@@ -77,12 +80,17 @@ function renovarUnaVez(): Promise<boolean> {
   return renovacion;
 }
 
+// Tras recargar la página solo queda el refresh token: obtiene un token de acceso antes de
+// una operación cuyo cuerpo depende del refresh token vigente (p. ej. el logout).
+export async function asegurarAcceso(): Promise<void> {
+  if (!tokenAcceso() && tokenRefresh()) await renovarUnaVez();
+}
+
 export async function api<T>(ruta: string, opciones: Opciones = {}): Promise<T> {
   let respuesta = await enviar(ruta, opciones);
   if (respuesta.status === 401 && !opciones.sinAuth) {
-    if (await renovarUnaVez()) {
-      respuesta = await enviar(ruta, opciones);
-    } else {
+    if (await renovarUnaVez()) respuesta = await enviar(ruta, opciones);
+    if (respuesta.status === 401) {
       const error = await aError(respuesta);
       expirarSesion();
       throw error;

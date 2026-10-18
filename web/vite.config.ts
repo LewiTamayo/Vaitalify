@@ -12,7 +12,8 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/main.tsx', 'src/test/**', 'src/**/*.test.{ts,tsx}', 'src/vite-env.d.ts'],
-      reporter: ['text-summary', 'lcov'],
+      // Rutas SF:web/src/... para que SonarQube (que analiza desde la raíz) las resuelva.
+      reporter: ['text-summary', ['lcov', { projectRoot: '..' }]],
     },
   },
 });

@@ -1,6 +1,6 @@
 import { api, ErrorApi } from '../api/cliente';
 import type { Bloque, MicroVentana, Pagina } from '../api/tipos';
-import { hoyLogico } from './fechas';
+import { hoyEnZona } from './fechas';
 
 // Perfil del ejemplo del spec (§7.3): despertar 06:15, acostarse 22:45, 7,5 h, 150 min (OMS).
 export const PERFIL_EJEMPLO = {
@@ -59,8 +59,11 @@ async function recomendarPausas(hoy: string): Promise<void> {
 }
 
 // Deja listo el día de hoy para la demo. Cada paso se puede repetir sin duplicar nada.
-export async function prepararDia(hoy: string = hoyLogico()): Promise<void> {
+export async function prepararDia(hoy: string = hoyEnZona()): Promise<void> {
   await asegurarPerfil();
   await asegurarHorario();
+  // Las ventanas solo se generan al cambiar perfil u horario (hoy + 6 días): si el horario
+  // ya existía (p. ej. una semana después) o aquel recálculo falló, hoy no tendría ventanas.
+  await api('/micro-ventanas/recalcular', { metodo: 'POST', cuerpo: { desde: hoy, hasta: hoy } });
   await recomendarPausas(hoy);
 }

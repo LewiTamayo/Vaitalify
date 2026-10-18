@@ -81,6 +81,26 @@ describe('api()', () => {
     quitar();
   });
 
+  it('si la renovación falla por la red o un 429, conserva la sesión y propaga el error', async () => {
+    const expiro = vi.fn();
+    const quitar = alExpirarSesion(expiro);
+    mockFetch(problema(401), problema(429, { detail: 'Demasiadas solicitudes' }));
+    await expect(api('/progreso')).rejects.toMatchObject({ status: 429 });
+    expect(tokenRefresh()).toBe('refresh-1');
+    expect(expiro).not.toHaveBeenCalled();
+    quitar();
+  });
+
+  it('si tras renovar la petición vuelve a dar 401, cierra la sesión', async () => {
+    const expiro = vi.fn();
+    const quitar = alExpirarSesion(expiro);
+    mockFetch(problema(401), json(200, sesionDePrueba(2)), problema(401));
+    await expect(api('/progreso')).rejects.toMatchObject({ status: 401 });
+    expect(tokenRefresh()).toBeNull();
+    expect(expiro).toHaveBeenCalledOnce();
+    quitar();
+  });
+
   it('las rutas sinAuth no envían token ni intentan renovar', async () => {
     const fetchMock = mockFetch(problema(401, { detail: 'Credenciales inválidas' }));
     await expect(

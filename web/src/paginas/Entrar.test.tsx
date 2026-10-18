@@ -112,4 +112,24 @@ describe('Entrar', () => {
     expect(tokenAcceso()).toBeNull();
     expect(usuarioGuardado()).toBeNull();
   });
+
+  it('Salir tras recargar la página renueva primero y revoca el refresh token vigente', async () => {
+    // Tras recargar solo queda lo de sessionStorage: el token de acceso vivía en memoria.
+    const { usuario: datos } = sesionDePrueba(1);
+    sessionStorage.setItem(
+      'vitalify.sesion',
+      JSON.stringify({ usuario: datos, refreshToken: 'refresh-1' }),
+    );
+    const fetchMock = mockRutas({
+      ...hoyVacio,
+      'POST /auth/refresh': json(200, sesionDePrueba(2)),
+      'POST /auth/logout': vacio(),
+    });
+    const { usuario } = renderApp('/hoy');
+    await usuario.click(await screen.findByRole('button', { name: 'Salir' }));
+
+    expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument();
+    const [logout] = llamadasA(fetchMock, 'POST', '/auth/logout');
+    expect(logout?.[1]?.body).toBe('{"refreshToken":"refresh-2"}');
+  });
 });

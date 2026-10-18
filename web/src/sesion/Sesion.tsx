@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { api } from '../api/cliente';
+import { api, asegurarAcceso } from '../api/cliente';
 import type { Sesion as DatosSesion, Usuario } from '../api/tipos';
 import {
   alExpirarSesion,
@@ -41,6 +41,7 @@ export function ProveedorSesion({ children }: Readonly<{ children: ReactNode }>)
       entrar: (correo, contrasena) => iniciar('/auth/login', { correo, contrasena }),
       registrarse: (datos) => iniciar('/auth/registro', datos),
       salir: async () => {
+        await asegurarAcceso().catch(() => undefined);
         const refreshToken = tokenRefresh();
         // Revocar es cortesía: si falla (red, sesión ya vencida) igual se sale.
         if (refreshToken) {

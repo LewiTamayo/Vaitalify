@@ -40,7 +40,7 @@ export function mockFetch(...respuestas: Array<Response | Respondedor>) {
 export type FetchMock = ReturnType<typeof mockFetch>;
 
 // Enrutador fijo: "METODO /ruta" → respuesta (o función que la crea en cada llamada).
-export function mockRutas(rutas: Record<string, Response | (() => Response)>) {
+export function mockRutas(rutas: Record<string, Response | (() => Response | Promise<Response>)>) {
   const fetchMock = vi.fn((url: string, init: RequestInit = {}): Promise<Response> => {
     const clave = `${init.method ?? 'GET'} ${url.replace(BASE, '')}`;
     const respuesta = rutas[clave];

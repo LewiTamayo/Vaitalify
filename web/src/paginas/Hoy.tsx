@@ -23,8 +23,10 @@ function textoAviso(r: MicroPausaConProgreso): string {
 export function Hoy() {
   const [pausas, setPausas] = useState<MicroPausa[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [ocupada, setOcupada] = useState<number | null>(null);
+  // Pausas con un PATCH en vuelo (puede haber varias a la vez).
+  const [ocupadas, setOcupadas] = useState<ReadonlySet<number>>(new Set());
   const [preparando, setPreparando] = useState(false);
+  const [preparado, setPreparado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
@@ -43,7 +45,7 @@ export function Hoy() {
   }, [cargar]);
 
   const cambiar = async (idPausa: number, estado: EstadoPausa) => {
-    setOcupada(idPausa);
+    setOcupadas((actuales) => new Set(actuales).add(idPausa));
     setError(null);
     try {
       const respuesta = await api<MicroPausaConProgreso>(`/micro-pausas/${idPausa}`, {
@@ -59,7 +61,11 @@ export function Hoy() {
     } catch (e) {
       setError(mensajeDe(e));
     } finally {
-      setOcupada(null);
+      setOcupadas((actuales) => {
+        const quedan = new Set(actuales);
+        quedan.delete(idPausa);
+        return quedan;
+      });
     }
   };
 
@@ -69,6 +75,7 @@ export function Hoy() {
     try {
       await prepararDia();
       await cargar();
+      setPreparado(true);
     } catch (e) {
       setError(mensajeDe(e));
     } finally {
@@ -103,6 +110,9 @@ export function Hoy() {
       {pausas?.length === 0 && (
         <section className="tarjeta vacio">
           <p>Hoy no tienes micro-pausas.</p>
+          {preparado && (
+            <p className="texto-suave">No hay huecos libres hoy en tu horario. Vuelve mañana.</p>
+          )}
           <p className="texto-suave">
             Para la demo, Vitalify puede crear tu perfil, un horario de estudio y trabajo de ejemplo
             y recomendarte pausas en los huecos libres.
@@ -124,7 +134,7 @@ export function Hoy() {
             <TarjetaPausa
               key={p.idPausa}
               pausa={p}
-              ocupada={ocupada === p.idPausa}
+              ocupada={ocupadas.has(p.idPausa)}
               alCambiar={(estado) => void cambiar(p.idPausa, estado)}
             />
           ))}

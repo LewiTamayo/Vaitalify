@@ -1,8 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { MicroPausa } from '../api/tipos';
 import { guardarSesion } from '../api/tokens';
-import { hoyLogico } from '../hoy/fechas';
+import { hoyEnZona } from '../hoy/fechas';
 import { HORARIO_EJEMPLO, PERFIL_EJEMPLO } from '../hoy/prepararDia';
 import { json, llamadasA, mockRutas, problema, sesionDePrueba } from '../test/http';
 import { renderApp } from '../test/render';
@@ -71,6 +71,35 @@ describe('Hoy', () => {
     expect(within(tarjeta).queryByRole('button', { name: 'Hecha' })).not.toBeInTheDocument();
   });
 
+  it('mientras una pausa se guarda, actuar sobre otra no reactiva sus botones', async () => {
+    const patchA: { liberar?: (r: Response) => void } = {};
+    mockRutas({
+      'GET /micro-pausas/hoy': json(200, [pausa(7, '09:00'), pausa(8, '12:00')]),
+      'PATCH /micro-pausas/7': () => new Promise<Response>((r) => (patchA.liberar = r)),
+      'PATCH /micro-pausas/8': () => new Promise<Response>(() => undefined),
+    });
+    const { usuario } = renderApp('/hoy');
+    const a = await screen.findByRole('article', { name: /09:00/ });
+    const b = screen.getByRole('article', { name: /12:00/ });
+    await usuario.click(within(a).getByRole('button', { name: 'Hecha' }));
+    await usuario.click(within(b).getByRole('button', { name: 'Hecha' }));
+
+    expect(within(a).getByRole('button', { name: 'Omitir' })).toBeDisabled();
+    expect(within(b).getByRole('button', { name: 'Omitir' })).toBeDisabled();
+    patchA.liberar?.(
+      json(200, {
+        ...pausa(7, '09:00', 'hecha'),
+        puntosGanados: 10,
+        rachaActual: 1,
+        insigniasNuevas: [],
+      }),
+    );
+    await waitFor(() =>
+      expect(within(a).queryByRole('button', { name: 'Omitir' })).not.toBeInTheDocument(),
+    );
+    expect(within(b).getByRole('button', { name: 'Omitir' })).toBeDisabled();
+  });
+
   it('Omitir envía el estado omitida', async () => {
     const fetchMock = mockRutas({
       'GET /micro-pausas/hoy': json(200, [pausa(7, '09:00')]),
@@ -117,7 +146,7 @@ describe('Hoy', () => {
   });
 
   describe('Preparar mi día de ejemplo', () => {
-    const hoy = hoyLogico();
+    const hoy = hoyEnZona();
     const rutaVentanas = `/micro-ventanas?desde=${hoy}&hasta=${hoy}&conPausa=false&pageSize=100`;
     const ventana = (idVentana: number) => ({
       idVentana,
@@ -134,6 +163,11 @@ describe('Hoy', () => {
         'POST /perfil': json(201, PERFIL_EJEMPLO),
         'GET /bloques?pageSize=1': json(200, { data: [], meta: { total: 0 } }),
         'POST /bloques/importar': json(201, []),
+        'POST /micro-ventanas/recalcular': json(200, {
+          generadas: 5,
+          eliminadas: 0,
+          conservadas: 0,
+        }),
         [`GET ${rutaVentanas}`]: json(200, { data: [ventana(1)], meta: { total: 1 } }),
         'POST /micro-ventanas/1/micro-pausa': json(201, pausa(1, '09:00')),
       });
@@ -156,6 +190,11 @@ describe('Hoy', () => {
         'GET /perfil': problema(404),
         'POST /perfil': problema(409, { detail: 'El perfil ya existe' }),
         'GET /bloques?pageSize=1': json(200, { data: [{}], meta: { total: 4 } }),
+        'POST /micro-ventanas/recalcular': json(200, {
+          generadas: 5,
+          eliminadas: 0,
+          conservadas: 0,
+        }),
         [`GET ${rutaVentanas}`]: json(200, {
           data: [ventana(1), ventana(2)],
           meta: { total: 2 },
@@ -170,7 +209,31 @@ describe('Hoy', () => {
 
       expect(await screen.findAllByRole('article')).toHaveLength(2);
       expect(llamadasA(fetchMock, 'POST', '/bloques/importar')).toHaveLength(0);
+      // Con bloques ya creados (p. ej. una semana después) igual recalcula las ventanas de hoy.
+      expect(cuerpo(llamadasA(fetchMock, 'POST', '/micro-ventanas/recalcular'))).toEqual({
+        desde: hoy,
+        hasta: hoy,
+      });
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('si después de preparar no hay pausas, lo explica', async () => {
+      mockRutas({
+        'GET /micro-pausas/hoy': json(200, []),
+        'GET /perfil': json(200, PERFIL_EJEMPLO),
+        'GET /bloques?pageSize=1': json(200, { data: [{}], meta: { total: 4 } }),
+        'POST /micro-ventanas/recalcular': json(200, {
+          generadas: 5,
+          eliminadas: 0,
+          conservadas: 0,
+        }),
+        [`GET ${rutaVentanas}`]: json(200, { data: [], meta: { total: 0 } }),
+      });
+      const { usuario } = renderApp('/hoy');
+      await usuario.click(
+        await screen.findByRole('button', { name: 'Preparar mi día de ejemplo' }),
+      );
+      expect(await screen.findByText(/No hay huecos libres hoy/)).toBeInTheDocument();
     });
 
     it('un error distinto de 409 detiene la preparación y se muestra', async () => {
