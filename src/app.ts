@@ -10,6 +10,7 @@ import { docsRouter } from './common/openapi/docs.js';
 import { REGLAS, fabricaPorDefecto, type FabricaLimitador } from './common/ratelimit/limitador.js';
 import { env } from './config/env.js';
 import { actividadesRouter } from './modules/actividades/actividades.routes.js';
+import { configNotificacionesRouter } from './modules/config-notificaciones/config-notificaciones.routes.js';
 import { crearAuthRouter } from './modules/auth/auth.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { RUTA_IMPORTAR, bloquesRouter } from './modules/bloques/bloques.routes.js';
@@ -59,6 +60,7 @@ export function createApp(opciones: OpcionesApp = {}): Express {
   apiRouter.use(microPausasRouter);
   apiRouter.use(registrosSuenoRouter);
   apiRouter.use(suenoRouter);
+  apiRouter.use(configNotificacionesRouter);
 
   app.get('/', (_req, res) => {
     res.redirect(302, '/api/v1/docs');
