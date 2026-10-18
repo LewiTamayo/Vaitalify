@@ -48,7 +48,7 @@ function avanzar(estado: EstadoRacha, dia: string): EstadoRacha {
 // sincronización tardía o desordenada da el mismo resultado que en orden.
 export function calcularRacha(diasActivos: string[]): EstadoRacha {
   const dias = [...new Set(diasActivos)].sort((a, b) => a.localeCompare(b));
-  return dias.reduce(avanzar, INICIAL);
+  return dias.reduce((estado, dia) => avanzar(estado, dia), INICIAL);
 }
 
 // Al consultar: una racha cuyo último día activo quedó más atrás de lo que cubren los comodines
